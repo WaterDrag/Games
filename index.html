@@ -29,7 +29,7 @@
         .dropdown-item:hover { background: var(--card-hover); }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; padding: 30px 40px; align-items: start; height: calc(100vh - 80px); overflow-y: auto; }
-        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 180px; transition: transform 0.3s; position: relative; }
+        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 200px; transition: transform 0.3s; position: relative; }
         .game-card:hover { transform: translateY(-5px); }
 
         #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 20000; }
@@ -42,8 +42,6 @@
         .hidden { display: none !important; }
 
         .admin-btn-container { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
-        .delete-btn { background: #ff5252; color: white; padding: 5px 10px; font-size: 0.8rem; border-radius: 5px; }
-        .edit-btn { background: #03dac6; color: black; padding: 5px 10px; font-size: 0.8rem; border-radius: 5px; }
     </style>
 </head>
 <body data-theme="dark">
@@ -90,8 +88,8 @@
         let isAdminMode = false;
         let allGames = [];
         let currentRoomId = "";
+        let roomStatusUnsub = null; // Tady je ten klíč k opravě!
 
-        // UI FUNKCE
         window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; closeDropdown(); };
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
         window.toggleDropdown = () => document.getElementById('settingsDropdown').classList.toggle('show');
@@ -108,7 +106,6 @@
             document.getElementById('gameFrame').srcdoc = ""; 
         };
 
-        // AUTH & USER
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('userInfo').innerText = user.displayName || user.email;
@@ -133,8 +130,7 @@
             isAdminMode = !isAdminMode;
             document.getElementById('btnAdminMode').innerText = isAdminMode ? '🛠️ Admin mód: ON' : '🛠️ Admin mód: OFF';
             document.getElementById('addGameBtn').classList.toggle('hidden', !isAdminMode);
-            closeDropdown();
-            render();
+            closeDropdown(); render();
         };
 
         window.prepareAddGame = () => {
@@ -148,7 +144,7 @@
             const g = allGames.find(x => x.id === id);
             document.getElementById('editGameId').value = g.id; document.getElementById('gameTitle').value = g.title;
             document.getElementById('gameEmoji').value = g.emoji; document.getElementById('gameHtml').value = g.html;
-            document.getElementById('gameIsMobile').checked = g.isMobile || false; document.getElementById('gameModalTitle').innerText = "Upravit hru";
+            document.getElementById('gameIsMobile').checked = g.isMobile || false; document.getElementById('gameModalTitle').innerText = "Upravit";
             openModal('gameModal');
         };
 
@@ -157,10 +153,10 @@
         document.getElementById('saveGameBtn').onclick = async () => {
             const id = document.getElementById('editGameId').value;
             const data = { title: document.getElementById('gameTitle').value, emoji: document.getElementById('gameEmoji').value, html: document.getElementById('gameHtml').value, isMobile: document.getElementById('gameIsMobile').checked, createdAt: new Date() };
-            try { if(id) await updateDoc(doc(db, "games", id), data); else await addDoc(collection(db, "games"), data); closeModal('gameModal'); } catch(e) { alert(e.message); }
+            if(id) await updateDoc(doc(db, "games", id), data); else await addDoc(collection(db, "games"), data);
+            closeModal('gameModal');
         };
 
-        // GAMES SNAPSHOT
         onSnapshot(query(collection(db, "games"), orderBy("createdAt", "desc")), (snap) => {
             allGames = []; snap.forEach(d => allGames.push({ id: d.id, ...d.data() }));
             if (!isGameRunning) render();
@@ -171,7 +167,7 @@
             allGames.forEach(g => {
                 const card = document.createElement('div'); card.className = 'game-card';
                 let html = `<div onclick="openLobby('${g.id}')" style="cursor:pointer"><span style="font-size:4rem">${g.emoji}</span><h3>${g.title}</h3></div>`;
-                if(isAdminMode) html += `<div class="admin-btn-container"><button class="edit-btn" onclick="editGame('${g.id}')">Edit</button><button class="delete-btn" onclick="deleteGame('${g.id}')">Smazat</button></div>`;
+                if(isAdminMode) html += `<div class="admin-btn-container"><button onclick="editGame('${g.id}')">Edit</button><button onclick="deleteGame('${g.id}')">Smazat</button></div>`;
                 card.innerHTML = html; grid.appendChild(card);
             });
         }
@@ -191,7 +187,14 @@
             document.getElementById('waitingArea').classList.remove('hidden');
             const ref = doc(db, "rooms", code);
             await setDoc(ref, { hostId: auth.currentUser.uid, status: "waiting", board: Array(9).fill(null), turn: 'X' });
-            onSnapshot(ref, (s) => { if (s.data()?.status === "playing") launch(true); });
+            
+            // TADY SE TO REFRESHUJE: Musíme ten poslouchač po startu zabít!
+            roomStatusUnsub = onSnapshot(ref, (s) => { 
+                if (s.data()?.status === "playing") {
+                    if (roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; } // KILL
+                    launch(true);
+                }
+            });
         };
 
         document.getElementById('joinRoomBtn').onclick = async () => {
@@ -199,19 +202,15 @@
             const ref = doc(db, "rooms", code); const s = await getDoc(ref);
             if (s.exists() && s.data().status === "waiting") {
                 currentRoomId = code; await updateDoc(ref, { guestId: auth.currentUser.uid, status: "playing" }); launch(false);
-            } else alert("Místnost nenalezena");
+            } else alert("Nenalezeno");
         };
 
         function launch(isHost) {
             isGameRunning = true;
             closeModal('lobbyModal');
-            const overlay = document.getElementById('gameOverlay');
             const frame = document.getElementById('gameFrame');
-            frame.srcdoc = ""; 
-            setTimeout(() => {
-                frame.srcdoc = `<script>window.ROOM_ID="${currentRoomId}"; window.IS_HOST=${isHost};<\/script>${window.selectedGameHtml}`;
-                overlay.style.display = 'block';
-            }, 50);
+            frame.srcdoc = `<script>window.ROOM_ID="${currentRoomId}"; window.IS_HOST=${isHost};<\/script>${window.selectedGameHtml}`;
+            document.getElementById('gameOverlay').style.display = 'block';
         }
     </script>
 </body>
