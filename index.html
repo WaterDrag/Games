@@ -5,31 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Online Game Hub</title>
     <style>
-        :root { --bg-color: #f4f4f9; --text-color: #333333; --card-bg: #ffffff; --card-hover: #eeeeee; --primary-color: #6200ea; --btn-text: #ffffff; --border-color: #cccccc; --dropdown-bg: #ffffff; }
-        [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-hover: #2c2c2c; --primary-color: #bb86fc; --btn-text: #121212; --border-color: #444444; --dropdown-bg: #252525; }
-        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; overflow: hidden; }
+        /* --- CSS: Dark Mode jako Default --- */
+        :root { 
+            --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; 
+            --card-hover: #2c2c2c; --primary-color: #bb86fc; --btn-text: #121212; 
+            --border-color: #444444; --dropdown-bg: #252525; 
+        }
+        [data-theme="light"] { 
+            --bg-color: #f4f4f9; --text-color: #333333; --card-bg: #ffffff; 
+            --card-hover: #eeeeee; --primary-color: #6200ea; --btn-text: #ffffff; 
+            --border-color: #cccccc; --dropdown-bg: #ffffff; 
+        }
+        
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s; overflow: hidden; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background-color: var(--card-bg); box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; z-index: 1000; }
         .controls { display: flex; align-items: center; gap: 15px; position: relative; }
         .user-info { font-weight: bold; color: var(--primary-color); font-size: 0.95rem; }
         button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .icon-btn { padding: 8px; font-size: 1.3rem; background: transparent; color: var(--text-color); border: none; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        
+        /* --- Dropdown --- */
         .dropdown { position: absolute; top: 55px; right: 0; background-color: var(--dropdown-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 200px; display: none; flex-direction: column; overflow: hidden; }
         .dropdown.show { display: flex; }
-        .dropdown-item { padding: 12px 15px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; padding: 30px 40px; align-items: start; }
-        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; transition: transform 0.3s; }
+        .dropdown-item { padding: 12px 15px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; color: var(--text-color); }
+        .dropdown-item:hover { background: var(--card-hover); }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; padding: 30px 40px; align-items: start; height: calc(100vh - 80px); overflow-y: auto; }
+        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 180px; transition: transform 0.3s; }
         .game-card:hover { transform: translateY(-5px); }
-        #gameOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 20000; }
+
+        #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 20000; }
         #gameFrame { width: 100%; height: 100%; border: none; }
-        #closeGameBtn { position: absolute; top: 20px; right: 20px; z-index: 20001; background: #ff5252; color: white; padding: 10px 15px; border-radius: 8px; font-weight: bold; }
-        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 450px; display: flex; flex-direction: column; gap: 12px; position: relative; }
-        .admin-actions { display: flex; gap: 10px; justify-content: center; margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border-color); }
+        #closeGameBtn { position: absolute; top: 20px; right: 20px; z-index: 20001; background: #ff5252; color: white; padding: 10px 15px; border-radius: 8px; font-weight: bold; border:none; cursor:pointer; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 10000; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); color: var(--text-color); box-sizing: border-box; }
         .hidden { display: none !important; }
     </style>
 </head>
-<body>
-    <header>
+<body data-theme="dark"> <header>
         <h1>🎮 Game Hub</h1>
         <div class="controls">
             <span id="userInfo" class="user-info hidden"></span>
@@ -39,7 +54,7 @@
                 <div class="dropdown-item hidden" id="btnAdminMode" style="background:rgba(187,134,252,0.1)">🛠️ Admin mód: OFF</div>
                 <div class="dropdown-item" id="btnChangeNick">👤 Změnit Nick</div>
                 <div class="dropdown-item" id="btnToggleTheme">🌓 Změnit Motiv</div>
-                <div class="dropdown-item" onclick="location.reload()">🚪 Odhlásit se</div>
+                <div class="dropdown-item" id="btnLogout">🚪 Odhlásit se</div>
             </div>
         </div>
     </header>
@@ -51,12 +66,15 @@
         <iframe id="gameFrame"></iframe>
     </div>
 
-    <div id="authModal" class="modal"><div class="modal-content"><h2>Přihlášení</h2><input type="email" id="emailInput" placeholder="Email"><input type="password" id="passwordInput" placeholder="Heslo"><button id="submitAuthBtn">Vstup</button></div></div>
+    <div id="authModal" class="modal"><div class="modal-content"><h2>Přihlášení</h2><input type="email" id="emailInput" placeholder="Email"><input type="password" id="passwordInput" placeholder="Heslo"><button id="submitAuthBtn">Vstoupit</button></div></div>
+    
+    <div id="nickModal" class="modal"><div class="modal-content"><h2>Změna Nicku</h2><input type="text" id="newNickInput" placeholder="Nová přezdívka"><button id="saveNickBtn">Uložit</button></div></div>
+
     <div id="lobbyModal" class="modal"><div class="modal-content"><h2 id="lobbyTitle">Lobby</h2><button id="createRoomBtn">Vytvořit místnost</button><hr><input type="text" id="roomCodeInput" placeholder="Kód místnosti"><button id="joinRoomBtn" style="background:#03dac6">Připojit se</button><div id="waitingArea" class="hidden"><p>Kód: <b id="displayCode" style="font-size:2rem"></b></p></div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4", authDomain: "gamehub-7fb7c.firebaseapp.com", projectId: "gamehub-7fb7c", storageBucket: "gamehub-7fb7c.firebasestorage.app", messagingSenderId: "981399258007", appId: "1:981399258007:web:abb3110a97d0069241fad2" };
@@ -64,6 +82,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // --- GLOBAL UI FUNCTIONS ---
         window.openModal = (id) => document.getElementById(id).style.display = 'flex';
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
         window.toggleDropdown = () => document.getElementById('settingsDropdown').classList.toggle('show');
@@ -73,6 +92,7 @@
         let allGames = [];
         let currentRoomId = "";
 
+        // --- AUTH & USER ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('userInfo').innerText = user.displayName || user.email;
@@ -80,6 +100,10 @@
                 document.getElementById('loginBtn').classList.add('hidden');
                 document.getElementById('settingsToggleBtn').classList.remove('hidden');
                 if (user.email === "zitkatomik007@gmail.com") document.getElementById('btnAdminMode').classList.remove('hidden');
+            } else {
+                document.getElementById('userInfo').classList.add('hidden');
+                document.getElementById('loginBtn').classList.remove('hidden');
+                document.getElementById('settingsToggleBtn').classList.add('hidden');
             }
         });
 
@@ -87,6 +111,36 @@
             try { await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); closeModal('authModal'); } catch (e) { alert(e.message); }
         };
 
+        document.getElementById('btnLogout').onclick = () => { signOut(auth); location.reload(); };
+
+        // --- NICKNAME ---
+        document.getElementById('btnChangeNick').onclick = () => {
+            document.getElementById('newNickInput').value = auth.currentUser.displayName || "";
+            openModal('nickModal');
+        };
+        document.getElementById('saveNickBtn').onclick = async () => {
+            const nick = document.getElementById('newNickInput').value.trim();
+            if(nick) { await updateProfile(auth.currentUser, { displayName: nick }); location.reload(); }
+        };
+
+        // --- THEME ---
+        document.getElementById('btnToggleTheme').onclick = () => {
+            const body = document.body;
+            const newTheme = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        };
+        // Načtení uloženého tématu nebo default dark
+        document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
+
+        // --- ADMIN ---
+        document.getElementById('btnAdminMode').onclick = () => {
+            isAdminMode = !isAdminMode;
+            document.getElementById('btnAdminMode').innerText = isAdminMode ? '🛠️ Admin mód: ON' : '🛠️ Admin mód: OFF';
+            render();
+        };
+
+        // --- GAMES ---
         onSnapshot(query(collection(db, "games"), orderBy("createdAt", "desc")), (snap) => {
             allGames = []; snap.forEach(d => allGames.push({ id: d.id, ...d.data() }));
             render();
@@ -97,6 +151,7 @@
             allGames.forEach(g => {
                 const card = document.createElement('div'); card.className = 'game-card';
                 card.innerHTML = `<div onclick="openLobby('${g.id}')" style="cursor:pointer"><span style="font-size:4rem">${g.emoji}</span><h3>${g.title}</h3></div>`;
+                if(isAdminMode) card.innerHTML += `<div style="font-size:0.7rem; color:gray; margin-top:5px;">ID: ${g.id}</div>`;
                 grid.appendChild(card);
             });
         }
