@@ -122,7 +122,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, arrayUnion, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+        // OPRAVA: Vráceny chybějící příkazy addDoc a deleteDoc!
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, arrayUnion, onSnapshot, query, orderBy, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4", authDomain: "gamehub-7fb7c.firebaseapp.com", projectId: "gamehub-7fb7c", storageBucket: "gamehub-7fb7c.firebasestorage.app", messagingSenderId: "981399258007", appId: "1:981399258007:web:abb3110a97d0069241fad2" };
         const app = initializeApp(firebaseConfig);
@@ -197,30 +198,37 @@
             document.getElementById('editGameId').value = g.id; document.getElementById('gameTitle').value = g.title;
             document.getElementById('gameEmoji').value = g.emoji; document.getElementById('gameHtml').value = g.html;
             document.getElementById('gameIsMobile').checked = g.isMobile || false; 
-            document.getElementById('gameMaxPlayers').value = g.maxPlayers || 2; // Načte nebo 2
+            document.getElementById('gameMaxPlayers').value = g.maxPlayers || 2; 
             document.getElementById('gameModalTitle').innerText = "Upravit";
             openModal('gameModal');
         };
 
         window.deleteGame = async (id) => { if(confirm("Smazat hru?")) await deleteDoc(doc(db, "games", id)); };
 
+        // OPRAVA Uložení: Přidáno do try-catch a lépe ošetřené vytvoření nové hry.
         document.getElementById('saveGameBtn').onclick = async () => {
-            const id = document.getElementById('editGameId').value;
-            const data = { 
-                title: document.getElementById('gameTitle').value, 
-                emoji: document.getElementById('gameEmoji').value, 
-                html: document.getElementById('gameHtml').value, 
-                isMobile: document.getElementById('gameIsMobile').checked, 
-                maxPlayers: parseInt(document.getElementById('gameMaxPlayers').value) || 2, // Uložení limitu
-                createdAt: id ? undefined : new Date() 
-            };
-            // Odebrání undefined hodnot (Firebase to nemá rád)
-            if(!id) delete data.createdAt; data.createdAt = new Date();
-            
-            if(id) { delete data.createdAt; await updateDoc(doc(db, "games", id), data); } 
-            else await addDoc(collection(db, "games"), data);
-            
-            closeModal('gameModal');
+            try {
+                const id = document.getElementById('editGameId').value;
+                const data = { 
+                    title: document.getElementById('gameTitle').value, 
+                    emoji: document.getElementById('gameEmoji').value, 
+                    html: document.getElementById('gameHtml').value, 
+                    isMobile: document.getElementById('gameIsMobile').checked, 
+                    maxPlayers: parseInt(document.getElementById('gameMaxPlayers').value) || 2
+                };
+                
+                if(id) { 
+                    await updateDoc(doc(db, "games", id), data); 
+                } else { 
+                    data.createdAt = new Date();
+                    await addDoc(collection(db, "games"), data);
+                }
+                
+                closeModal('gameModal');
+            } catch (e) {
+                console.error(e);
+                alert("Jejda, chyba při ukládání: " + e.message);
+            }
         };
 
         onSnapshot(query(collection(db, "games"), orderBy("createdAt", "desc")), (snap) => {
@@ -242,7 +250,7 @@
             if (!auth.currentUser) return openModal('authModal');
             const g = allGames.find(x => x.id === id);
             window.selectedGameHtml = g.html;
-            window.selectedGameMax = g.maxPlayers || 2; // Přečte limit pro hru (pokud neexistuje, 2)
+            window.selectedGameMax = g.maxPlayers || 2; 
             
             document.getElementById('lobbyTitle').innerText = g.title;
             document.getElementById('lobbyInitialView').classList.remove('hidden');
@@ -266,7 +274,7 @@
                 players: [myPlayerObj],
                 hostId: myPlayerObj.uid, 
                 hostName: myPlayerObj.name,
-                maxPlayers: window.selectedGameMax, // Uloží se limit do místnosti
+                maxPlayers: window.selectedGameMax,
                 board: Array(9).fill(null), turn: 'X', rematchHost: false, rematchGuest: false
             });
             
@@ -280,7 +288,6 @@
                 const roomData = s.data();
                 const max = roomData.maxPlayers || 2;
                 
-                // Ochrana plné místnosti
                 if(roomData.players && roomData.players.length >= max) { 
                     alert(`Místnost je plná (max ${max} hráči).`); 
                     return; 
