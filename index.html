@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Online Game Hub</title>
     <style>
-        /* --- CSS: Dark Mode jako Default --- */
         :root { 
             --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; 
             --card-hover: #2c2c2c; --primary-color: #bb86fc; --btn-text: #121212; 
@@ -24,15 +23,13 @@
         button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .icon-btn { padding: 8px; font-size: 1.3rem; background: transparent; color: var(--text-color); border: none; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
         
-        /* --- Dropdown --- */
         .dropdown { position: absolute; top: 55px; right: 0; background-color: var(--dropdown-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.3); width: 200px; display: none; flex-direction: column; overflow: hidden; z-index: 1001; }
         .dropdown.show { display: flex; }
         .dropdown-item { padding: 12px 15px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; color: var(--text-color); }
         .dropdown-item:hover { background: var(--card-hover); }
-        .dropdown-item:last-child { border-bottom: none; }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; padding: 30px 40px; align-items: start; height: calc(100vh - 80px); overflow-y: auto; }
-        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 180px; transition: transform 0.3s; position: relative; }
+        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 200px; transition: transform 0.3s; position: relative; }
         .game-card:hover { transform: translateY(-5px); }
 
         #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 20000; }
@@ -40,13 +37,13 @@
         #closeGameBtn { position: absolute; top: 20px; right: 20px; z-index: 20001; background: #ff5252; color: white; padding: 10px 15px; border-radius: 8px; font-weight: bold; border:none; cursor:pointer; }
         
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 10000; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 16px; width: 95%; max-width: 500px; display: flex; flex-direction: column; gap: 12px; position: relative; max-height: 90vh; overflow-y: auto; }
         input, textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); color: var(--text-color); box-sizing: border-box; }
         .hidden { display: none !important; }
 
-        /* Admin tlačítka na kartě */
-        .admin-btn-container { margin-top: 15px; display: flex; gap: 5px; justify-content: center; }
-        .delete-btn { background: #ff5252; color: white; padding: 5px 10px; font-size: 0.7rem; border-radius: 5px; }
+        .admin-btn-container { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
+        .delete-btn { background: #ff5252; color: white; padding: 5px 10px; font-size: 0.8rem; border-radius: 5px; }
+        .edit-btn { background: #03dac6; color: black; padding: 5px 10px; font-size: 0.8rem; border-radius: 5px; }
     </style>
 </head>
 <body data-theme="dark">
@@ -55,6 +52,7 @@
         <h1>🎮 Game Hub</h1>
         <div class="controls">
             <span id="userInfo" class="user-info hidden"></span>
+            <button id="addGameBtn" class="hidden" onclick="prepareAddGame()">+ Nová hra</button>
             <button id="loginBtn" onclick="openModal('authModal')">Přihlásit se</button>
             <button id="settingsToggleBtn" class="hidden icon-btn" onclick="event.stopPropagation(); toggleDropdown()">⚙️</button>
             <div id="settingsDropdown" class="dropdown">
@@ -77,25 +75,23 @@
     
     <div id="nickModal" class="modal"><div class="modal-content"><h2>Změna Nicku</h2><input type="text" id="newNickInput" placeholder="Nová přezdívka"><button id="saveNickBtn">Uložit</button></div></div>
 
-    <div id="lobbyModal" class="modal"><div class="modal-content"><h2 id="lobbyTitle">Lobby</h2><button id="createRoomBtn">Vytvořit místnost</button><div style="margin: 15px 0;"></div> <input type="text" id="roomCodeInput" placeholder="Kód místnosti"><button id="joinRoomBtn" style="background:#03dac6">Připojit se</button><div id="waitingArea" class="hidden"><p>Kód: <b id="displayCode" style="font-size:2rem"></b></p></div></div></div>
+    <div id="gameModal" class="modal"><div class="modal-content"><h2 id="gameModalTitle">Nová hra</h2><input type="hidden" id="editGameId"><input type="text" id="gameTitle" placeholder="Název hry"><input type="text" id="gameEmoji" placeholder="Emoji"><div style="display:flex; gap:10px; align-items:center;"><input type="checkbox" id="gameIsMobile"><label for="gameIsMobile">Pro mobil 📱</label></div><textarea id="gameHtml" rows="10" placeholder="HTML kód..."></textarea><button id="saveGameBtn">Uložit hru</button></div></div>
+
+    <div id="lobbyModal" class="modal"><div class="modal-content"><h2 id="lobbyTitle">Lobby</h2><button id="createRoomBtn">Vytvořit místnost</button><div style="margin: 10px 0;"></div><input type="text" id="roomCodeInput" placeholder="Kód místnosti"><button id="joinRoomBtn" style="background:#03dac6">Připojit se</button><div id="waitingArea" class="hidden"><p>Kód: <b id="displayCode" style="font-size:2rem"></b></p></div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4", authDomain: "gamehub-7fb7c.firebaseapp.com", projectId: "gamehub-7fb7c", storageBucket: "gamehub-7fb7c.firebasestorage.app", messagingSenderId: "981399258007", appId: "1:981399258007:web:abb3110a97d0069241fad2" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- GLOBAL UI FUNCTIONS ---
-        window.openModal = (id) => { 
-            document.getElementById(id).style.display = 'flex'; 
-            closeDropdown(); 
-        };
+        // UI FUNKCE
+        window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; closeDropdown(); };
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-        
         window.toggleDropdown = () => document.getElementById('settingsDropdown').classList.toggle('show');
         const closeDropdown = () => document.getElementById('settingsDropdown').classList.remove('show');
 
@@ -110,7 +106,7 @@
         let allGames = [];
         let currentRoomId = "";
 
-        // --- AUTH & USER ---
+        // AUTH
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('userInfo').innerText = user.displayName || user.email;
@@ -124,44 +120,63 @@
         document.getElementById('submitAuthBtn').onclick = async () => {
             try { await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); closeModal('authModal'); } catch (e) { alert("Chyba přihlášení"); }
         };
-
         document.getElementById('btnLogout').onclick = () => { signOut(auth); location.reload(); };
 
-        // --- NICKNAME ---
-        document.getElementById('btnChangeNick').onclick = () => {
-            document.getElementById('newNickInput').value = auth.currentUser.displayName || "";
-            openModal('nickModal');
-        };
-        document.getElementById('saveNickBtn').onclick = async () => {
-            const nick = document.getElementById('newNickInput').value.trim();
-            if(nick) { await updateProfile(auth.currentUser, { displayName: nick }); location.reload(); }
-        };
-
-        // --- THEME ---
-        document.getElementById('btnToggleTheme').onclick = () => {
-            const body = document.body;
-            const newTheme = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            body.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            closeDropdown();
-        };
+        // NICK & THEME
+        document.getElementById('btnChangeNick').onclick = () => { document.getElementById('newNickInput').value = auth.currentUser.displayName || ""; openModal('nickModal'); };
+        document.getElementById('saveNickBtn').onclick = async () => { const nick = document.getElementById('newNickInput').value.trim(); if(nick) { await updateProfile(auth.currentUser, { displayName: nick }); location.reload(); } };
+        document.getElementById('btnToggleTheme').onclick = () => { const body = document.body; const newTheme = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; body.setAttribute('data-theme', newTheme); localStorage.setItem('theme', newTheme); closeDropdown(); };
         document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
 
-        // --- ADMIN ---
+        // ADMIN LOGIC
         document.getElementById('btnAdminMode').onclick = () => {
             isAdminMode = !isAdminMode;
             document.getElementById('btnAdminMode').innerText = isAdminMode ? '🛠️ Admin mód: ON' : '🛠️ Admin mód: OFF';
+            document.getElementById('addGameBtn').classList.toggle('hidden', !isAdminMode);
             closeDropdown();
             render();
         };
 
-        window.deleteGame = async (gameId) => {
-            if(confirm("Opravdu smazat hru?")) {
-                await deleteDoc(doc(db, "games", gameId));
-            }
+        window.prepareAddGame = () => {
+            document.getElementById('editGameId').value = "";
+            document.getElementById('gameTitle').value = "";
+            document.getElementById('gameEmoji').value = "";
+            document.getElementById('gameHtml').value = "";
+            document.getElementById('gameIsMobile').checked = false;
+            document.getElementById('gameModalTitle').innerText = "Nová hra";
+            openModal('gameModal');
         };
 
-        // --- GAMES ---
+        window.editGame = (id) => {
+            const g = allGames.find(x => x.id === id);
+            document.getElementById('editGameId').value = g.id;
+            document.getElementById('gameTitle').value = g.title;
+            document.getElementById('gameEmoji').value = g.emoji;
+            document.getElementById('gameHtml').value = g.html;
+            document.getElementById('gameIsMobile').checked = g.isMobile || false;
+            document.getElementById('gameModalTitle').innerText = "Upravit hru";
+            openModal('gameModal');
+        };
+
+        window.deleteGame = async (id) => { if(confirm("Smazat hru?")) await deleteDoc(doc(db, "games", id)); };
+
+        document.getElementById('saveGameBtn').onclick = async () => {
+            const id = document.getElementById('editGameId').value;
+            const data = {
+                title: document.getElementById('gameTitle').value,
+                emoji: document.getElementById('gameEmoji').value,
+                html: document.getElementById('gameHtml').value,
+                isMobile: document.getElementById('gameIsMobile').checked,
+                createdAt: new Date()
+            };
+            try {
+                if(id) await updateDoc(doc(db, "games", id), data);
+                else await addDoc(collection(db, "games"), data);
+                closeModal('gameModal');
+            } catch(e) { alert(e.message); }
+        };
+
+        // GAMES RENDER
         onSnapshot(query(collection(db, "games"), orderBy("createdAt", "desc")), (snap) => {
             allGames = []; snap.forEach(d => allGames.push({ id: d.id, ...d.data() }));
             render();
@@ -171,16 +186,14 @@
             const grid = document.getElementById('gameGrid'); grid.innerHTML = '';
             allGames.forEach(g => {
                 const card = document.createElement('div'); card.className = 'game-card';
-                let content = `<div onclick="openLobby('${g.id}')" style="cursor:pointer"><span style="font-size:4rem">${g.emoji}</span><h3>${g.title}</h3></div>`;
-                
+                let html = `<div onclick="openLobby('${g.id}')" style="cursor:pointer"><span style="font-size:4rem">${g.emoji}</span><h3>${g.title}</h3></div>`;
                 if(isAdminMode) {
-                    content += `
-                    <div class="admin-btn-container">
+                    html += `<div class="admin-btn-container">
+                        <button class="edit-btn" onclick="editGame('${g.id}')">Edit</button>
                         <button class="delete-btn" onclick="deleteGame('${g.id}')">Smazat</button>
                     </div>`;
                 }
-                
-                card.innerHTML = content;
+                card.innerHTML = html;
                 grid.appendChild(card);
             });
         }
