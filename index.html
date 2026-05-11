@@ -51,11 +51,11 @@
         .game-card {
             background-color: var(--card-bg); border: 1px solid var(--border-color);
             border-radius: 10px; padding: 20px; text-align: center;
-            cursor: pointer; transition: transform 0.2s;
+            cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; justify-content: center; min-height: 150px;
         }
         .game-card:hover { transform: translateY(-5px); background-color: var(--card-hover); }
-        .game-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 5px; margin-bottom: 10px; }
-        .game-card .emoji-icon { font-size: 5rem; margin: 10px 0; display: block; }
+        .game-card .emoji-icon { font-size: 5rem; margin-bottom: 15px; display: block; }
+        .game-card h3 { margin: 0; }
 
         .modal {
             display: none; position: fixed; z-index: 10; left: 0; top: 0;
@@ -111,11 +111,8 @@
             <span class="close-btn" id="closeAddGameModal">&times;</span>
             <h2>Nová hra (Admin)</h2>
             <input type="text" id="gameTitle" placeholder="Název hry" required>
-            <label style="font-size: 0.9em; margin-top: 10px;">Obrázek (vyber z PC):</label>
-            <input type="file" id="gameImage" accept="image/*">
-            <div class="divider">NEBO</div>
-            <input type="text" id="gameEmoji" placeholder="Emoji ikona (např. 👾)">
-            <textarea id="gameHtml" rows="4" placeholder="Sem vlož celý <html> kód hry nebo Iframe..." required></textarea>
+            <input type="text" id="gameEmoji" placeholder="Emoji ikona (např. 👾, 🏎️, 🧩)" required>
+            <textarea id="gameHtml" rows="5" placeholder="Sem vlož celý <html> kód hry nebo Iframe..." required></textarea>
             <button id="saveGameBtn">Uložit do databáze</button>
         </div>
     </div>
@@ -140,7 +137,7 @@
         const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
 
-        // ⚠️ ZDE JE TVŮJ E-MAIL JAKO ADMIN ⚠️
+        // Admin Email
         const ADMIN_EMAIL = "zitkatomik007@gmail.com"; 
 
         // UI Elements
@@ -186,7 +183,7 @@
 
         logoutBtn.onclick = () => signOut(auth);
 
-        // --- RBAC (Role-Based Access Control) ---
+        // --- RBAC ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 let displayName = user.displayName || user.email.split('@')[0];
@@ -207,10 +204,10 @@
             }
         });
 
-        // --- Database Logic (Firestore) ---
+        // --- Firestore Logic ---
         openAddGameModalBtn.onclick = () => addGameModal.style.display = 'flex';
 
-        // Read Games (Real-time listener)
+        // Read Games
         const q = query(collection(db, "games"));
         onSnapshot(q, (snapshot) => {
             const grid = document.getElementById('gameGrid');
@@ -221,11 +218,7 @@
                 const card = document.createElement('div');
                 card.className = 'game-card';
                 
-                let mediaHtml = game.image 
-                    ? `<img src="${game.image}" alt="${game.title}">` 
-                    : `<span class="emoji-icon">${game.emoji || '🎮'}</span>`;
-
-                card.innerHTML = `${mediaHtml}<h3>${game.title}</h3>`;
+                card.innerHTML = `<span class="emoji-icon">${game.emoji || '🎮'}</span><h3>${game.title}</h3>`;
                 
                 card.onclick = () => {
                     const newWindow = window.open();
@@ -239,40 +232,29 @@
         // Save Game
         document.getElementById('saveGameBtn').onclick = async () => {
             const title = document.getElementById('gameTitle').value;
-            const emoji = document.getElementById('gameEmoji').value;
+            let emoji = document.getElementById('gameEmoji').value;
             const htmlContent = document.getElementById('gameHtml').value;
-            const imageInput = document.getElementById('gameImage');
 
-            if (!title || !htmlContent) return alert('Vyplň název a kód!');
+            if (!title || !htmlContent) return alert('Vyplň název a kód hry!');
+            if (!emoji) emoji = '🎮';
 
-            const saveToFirestore = async (imgData) => {
-                try {
-                    await addDoc(collection(db, "games"), {
-                        title: title,
-                        image: imgData,
-                        emoji: emoji,
-                        html: htmlContent,
-                        createdAt: new Date()
-                    });
-                    addGameModal.style.display = 'none';
-                    // Reset inputs
-                    document.getElementById('gameTitle').value = '';
-                    document.getElementById('gameEmoji').value = '';
-                    document.getElementById('gameHtml').value = '';
-                    document.getElementById('gameImage').value = '';
-                } catch(e) { alert("Chyba při ukládání: " + e.message); }
-            };
-
-            if (imageInput.files && imageInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => saveToFirestore(e.target.result); // Base64
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                saveToFirestore(null);
-            }
+            try {
+                await addDoc(collection(db, "games"), {
+                    title: title,
+                    emoji: emoji,
+                    html: htmlContent,
+                    createdAt: new Date()
+                });
+                addGameModal.style.display = 'none';
+                
+                // Vyčištění formuláře po uložení
+                document.getElementById('gameTitle').value = '';
+                document.getElementById('gameEmoji').value = '';
+                document.getElementById('gameHtml').value = '';
+            } catch(e) { alert("Chyba při ukládání: " + e.message); }
         };
 
-        // Theme
+        // --- Theme ---
         const themeToggleBtn = document.getElementById('themeToggle');
         document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
         themeToggleBtn.onclick = () => {
