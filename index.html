@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Online Game Hub</title>
     <style>
-        /* --- CSS: Styling & Theme Variables --- */
+        /* --- CSS Variables & Core Styles --- */
         :root { --bg-color: #f4f4f9; --text-color: #333333; --card-bg: #ffffff; --card-hover: #eeeeee; --primary-color: #6200ea; --btn-text: #ffffff; --border-color: #cccccc; --dropdown-bg: #ffffff; }
         [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-hover: #2c2c2c; --primary-color: #bb86fc; --btn-text: #121212; --border-color: #444444; --dropdown-bg: #252525; }
         
         body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; overflow-x: hidden; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background-color: var(--card-bg); box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; z-index: 100; }
-        h1 { margin: 0; font-size: 1.4rem; letter-spacing: 1px; cursor: default; }
+        h1 { margin: 0; font-size: 1.4rem; letter-spacing: 1px; }
         
         .controls { display: flex; align-items: center; gap: 15px; position: relative; }
         .user-info { font-weight: bold; color: var(--primary-color); font-size: 0.95rem; }
@@ -19,41 +19,32 @@
         
         button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s ease; }
         button:hover { opacity: 0.85; transform: translateY(-1px); }
-        .icon-btn { padding: 8px; font-size: 1.3rem; background: transparent; color: var(--text-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-        .icon-btn:hover { background: var(--card-hover); transform: rotate(30deg); }
+        .icon-btn { padding: 8px; font-size: 1.3rem; background: transparent; color: var(--text-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+        .icon-btn:hover { background: var(--card-hover); }
         
-        /* --- Dropdown Menu --- */
         .dropdown { position: absolute; top: 55px; right: 0; background-color: var(--dropdown-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 180px; display: none; flex-direction: column; overflow: hidden; animation: slideDown 0.2s ease-out; }
         .dropdown.show { display: flex; }
-        .dropdown-item { padding: 12px 15px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background 0.2s; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
+        .dropdown-item { padding: 12px 15px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
         .dropdown-item:last-child { border-bottom: none; color: #cf6679; }
         .dropdown-item:hover { background: var(--card-hover); }
         
         main { padding: 30px 40px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; }
         
-        .game-card { position: relative; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; justify-content: center; min-height: 160px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .game-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.2); background-color: var(--card-hover); }
-        .game-card .emoji-icon { font-size: 4.5rem; margin-bottom: 15px; display: block; transition: transform 0.3s ease; }
-        .game-card:hover .emoji-icon { transform: scale(1.15) rotate(5deg); }
-        
-        .mobile-badge { position: absolute; top: 12px; right: 12px; font-size: 1.1rem; opacity: 0.7; }
-        
-        /* --- Animations --- */
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .game-card { position: relative; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; justify-content: center; min-height: 160px; }
+        .game-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
+        .game-card .emoji-icon { font-size: 4.5rem; margin-bottom: 15px; }
         
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; backdrop-filter: blur(3px); }
         .modal-content { background-color: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 380px; display: flex; flex-direction: column; gap: 15px; position: relative; animation: popIn 0.3s ease-out; }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; }
         
-        input, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; background-color: var(--bg-color); color: var(--text-color); box-sizing: border-box; font-size: 1rem; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; background-color: var(--bg-color); color: var(--text-color); box-sizing: border-box; }
         .hidden { display: none !important; }
-
-        @media (max-width: 600px) {
-            header { padding: 15px 20px; }
-            main { padding: 20px; }
-            .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
-        }
+        .google-btn { background-color: #db4437; color: white; width: 100%; margin-top: 10px; }
+        
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -64,9 +55,7 @@
             <span id="userInfo" class="user-info hidden"></span>
             <button id="loginBtn">Přihlásit se</button>
             <button id="openAddGameModal" class="hidden">+ Přidat hru</button>
-            
             <button id="settingsToggleBtn" class="hidden icon-btn">⚙️</button>
-            
             <div id="settingsDropdown" class="dropdown">
                 <div class="dropdown-item" id="btnChangeNick">👤 Změnit Nick</div>
                 <div class="dropdown-item" id="btnToggleTheme">🌓 Změnit Motiv</div>
@@ -75,22 +64,20 @@
         </div>
     </header>
 
-    <main>
-        <div class="grid" id="gameGrid"></div>
-    </main>
+    <main><div class="grid" id="gameGrid"></div></main>
 
-    <div id="authModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('authModal')">&times;</span><h2 id="authTitle">Přihlášení</h2><input type="text" id="nickInput" class="hidden" placeholder="Tvoje přezdívka (Nick)"><input type="email" id="emailInput" placeholder="E-mail" required><input type="password" id="passwordInput" placeholder="Heslo" required><button id="submitAuthBtn">Přihlásit</button><p style="text-align: center; font-size: 0.9em; cursor: pointer; color: var(--primary-color); font-weight: bold;" id="toggleAuthMode">Nemáš účet? Registruj se zde.</p></div></div>
+    <div id="authModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('authModal')">&times;</span><h2 id="authTitle">Přihlášení</h2><input type="email" id="emailInput" placeholder="E-mail" required><input type="password" id="passwordInput" placeholder="Heslo" required><button id="submitAuthBtn">Přihlásit</button><p style="text-align: center; font-size: 0.9em; cursor: pointer; color: var(--primary-color); font-weight: bold;" id="toggleAuthMode">Nemáš účet? Registruj se zde.</p><div style="text-align:center; opacity:0.5;">NEBO</div><button id="googleLoginBtn" class="google-btn">Přihlásit přes Google</button></div></div>
     
-    <div id="nickModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('nickModal')">&times;</span><h2>Změna přezdívky</h2><p style="font-size: 0.9em; opacity: 0.7;">Zadej svůj nový herní Nick:</p><input type="text" id="settingsNickInput" placeholder="Nový Nick"><button id="updateNickBtn">Uložit přezdívku</button></div></div>
+    <div id="nickModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('nickModal')">&times;</span><h2>Změna přezdívky</h2><input type="text" id="settingsNickInput" placeholder="Nový Nick"><button id="updateNickBtn">Uložit</button></div></div>
     
-    <div id="addGameModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('addGameModal')">&times;</span><h2>Nová hra (Admin)</h2><input type="text" id="gameTitle" placeholder="Název hry" required><input type="text" id="gameEmoji" placeholder="Emoji ikona" required><div style="display:flex; gap:10px; align-items:center;"><input type="checkbox" id="gameIsMobile" style="width:20px;"><label for="gameIsMobile">Hratelné na mobilu 📱</label></div><textarea id="gameHtml" rows="4" placeholder="HTML kód hry..." required></textarea><button id="saveGameBtn">Uložit hru</button></div></div>
+    <div id="addGameModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('addGameModal')">&times;</span><h2>Nová hra</h2><input type="text" id="gameTitle" placeholder="Název hry"><input type="text" id="gameEmoji" placeholder="Emoji"><div style="display:flex; gap:10px; align-items:center;"><input type="checkbox" id="gameIsMobile"><label for="gameIsMobile">Pro mobil 📱</label></div><textarea id="gameHtml" rows="4" placeholder="HTML kód..."></textarea><button id="saveGameBtn">Uložit</button></div></div>
 
-    <div id="lobbyModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('lobbyModal')">&times;</span><h2 id="lobbyGameTitle">Lobby</h2><div id="lobbyActions"><button id="createRoomBtn" style="width: 100%;">Vytvořit místnost</button><div style="text-align:center; margin:10px 0; opacity:0.5;">NEBO</div><input type="text" id="roomCodeInput" class="code-input" placeholder="Kód (5 znaků)" maxlength="5"><button id="joinRoomBtn" style="width: 100%; margin-top:10px; background:#03dac6; color:#000;">Připojit se</button></div><div id="lobbyWaiting" class="hidden"><p style="text-align:center;">Kód místnosti:</p><div class="room-code-display" id="displayRoomCode">XXXXX</div><p style="text-align:center; font-size:0.8em;">Čekám na soupeře...</p></div></div></div>
+    <div id="lobbyModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('lobbyModal')">&times;</span><h2 id="lobbyGameTitle">Lobby</h2><div id="lobbyActions"><button id="createRoomBtn" style="width:100%;">Vytvořit místnost</button><input type="text" id="roomCodeInput" style="text-align:center; margin-top:10px;" placeholder="Kód (5 znaků)" maxlength="5"><button id="joinRoomBtn" style="width:100%; margin-top:10px; background:#03dac6; color:#000;">Připojit se</button></div><div id="lobbyWaiting" class="hidden"><p style="text-align:center;">Kód:</p><div style="font-size:2rem; font-weight:bold; text-align:center;" id="displayRoomCode">XXXXX</div></div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, updateProfile } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc, onSnapshot, query, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4",
@@ -109,42 +96,37 @@
         const ADMIN_EMAIL = "zitkatomik007@gmail.com"; 
         const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        // Global Modal Closer
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
 
-        // UI Refs
-        const settingsToggleBtn = document.getElementById('settingsToggleBtn');
-        const settingsDropdown = document.getElementById('settingsDropdown');
-        const loginBtn = document.getElementById('loginBtn');
-        const userInfo = document.getElementById('userInfo');
-
-        // Dropdown Toggle
-        settingsToggleBtn.onclick = (e) => {
-            e.stopPropagation();
-            settingsDropdown.classList.toggle('show');
-        };
+        const [settingsToggleBtn, settingsDropdown, loginBtn, userInfo] = ['settingsToggleBtn','settingsDropdown','loginBtn','userInfo'].map(id => document.getElementById(id));
+        
+        settingsToggleBtn.onclick = (e) => { e.stopPropagation(); settingsDropdown.classList.toggle('show'); };
         window.onclick = () => settingsDropdown.classList.remove('show');
 
-        // Auth Logic
-        loginBtn.onclick = () => document.getElementById('authModal').style.display = 'flex';
-        
         let isLoginMode = true;
         document.getElementById('toggleAuthMode').onclick = (e) => {
             isLoginMode = !isLoginMode;
             document.getElementById('authTitle').innerText = isLoginMode ? 'Přihlášení' : 'Registrace';
-            document.getElementById('nickInput').classList.toggle('hidden', isLoginMode);
             e.target.innerText = isLoginMode ? 'Nemáš účet? Registruj se zde.' : 'Máš účet? Přihlas se zde.';
         };
 
+        // --- Auth Logic with user-X pattern ---
         document.getElementById('submitAuthBtn').onclick = async () => {
             const email = document.getElementById('emailInput').value;
             const pass = document.getElementById('passwordInput').value;
-            const nick = document.getElementById('nickInput').value;
             try {
                 if (isLoginMode) await signInWithEmailAndPassword(auth, email, pass);
                 else {
                     const res = await createUserWithEmailAndPassword(auth, email, pass);
-                    await updateProfile(res.user, { displayName: nick });
+                    // Zjistíme počet hráčů v DB pro vygenerování user-X
+                    const coll = collection(db, "users_meta"); // Pomocná kolekce pro počítání uživatelů
+                    const snapshot = await getCountFromServer(coll);
+                    const userNum = snapshot.data().count + 1;
+                    const autoNick = `user-${userNum}`;
+                    
+                    await updateProfile(res.user, { displayName: autoNick });
+                    // Uložíme záznam o uživateli do DB (kvůli počítání)
+                    await setDoc(doc(db, "users_meta", res.user.uid), { registeredAt: new Date() });
                 }
                 closeModal('authModal');
             } catch (e) { alert(e.message); }
@@ -154,16 +136,24 @@
             try { await signInWithPopup(auth, googleProvider); closeModal('authModal'); } catch (e) { alert(e.message); }
         };
 
-        // Settings Actions
         document.getElementById('btnChangeNick').onclick = () => {
             document.getElementById('settingsNickInput').value = auth.currentUser.displayName || "";
             document.getElementById('nickModal').style.display = 'flex';
         };
+
         document.getElementById('updateNickBtn').onclick = async () => {
-            await updateProfile(auth.currentUser, { displayName: document.getElementById('settingsNickInput').value });
-            userInfo.innerText = auth.currentUser.displayName;
-            closeModal('nickModal');
+            const newNick = document.getElementById('settingsNickInput').value.trim();
+            // Validace: Zákaz "user-..."
+            if (newNick.toLowerCase().startsWith("user-")) {
+                return alert("Název začínající na 'user-' je vyhrazen pro systémové účty!");
+            }
+            if (newNick) {
+                await updateProfile(auth.currentUser, { displayName: newNick });
+                userInfo.innerText = auth.currentUser.displayName;
+                closeModal('nickModal');
+            }
         };
+
         document.getElementById('btnToggleTheme').onclick = () => {
             let nt = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
             document.body.setAttribute('data-theme', nt);
@@ -171,7 +161,6 @@
         };
         document.getElementById('btnLogout').onclick = () => signOut(auth);
 
-        // State Change
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 userInfo.innerHTML = `${user.displayName || user.email.split('@')[0]} ${user.email === ADMIN_EMAIL ? '<span class="admin-badge">ADMIN</span>' : ''}`;
@@ -182,7 +171,7 @@
             }
         });
 
-        // Load Games
+        // Hry & Lobby (stejná logika jako minule)
         document.getElementById('openAddGameModal').onclick = () => document.getElementById('addGameModal').style.display = 'flex';
         onSnapshot(query(collection(db, "games")), (snap) => {
             const grid = document.getElementById('gameGrid'); grid.innerHTML = '';
@@ -190,13 +179,12 @@
                 const game = docSnap.data();
                 if (isMobileDevice && !game.isMobile) return;
                 const card = document.createElement('div'); card.className = 'game-card';
-                card.innerHTML = `${game.isMobile ? '<div class="mobile-badge">📱</div>' : ''}<span class="emoji-icon">${game.emoji}</span><h3>${game.title}</h3>`;
+                card.innerHTML = `${game.isMobile ? '<div style="position:absolute;top:10px;right:10px;">📱</div>' : ''}<span class="emoji-icon">${game.emoji}</span><h3>${game.title}</h3>`;
                 card.onclick = () => openLobby(game.title, game.html);
                 grid.appendChild(card);
             });
         });
 
-        // Lobby Logic
         let curHtml = "", curId = "", isHost = false, unsub = null;
         function openLobby(t, h) {
             if (!auth.currentUser) return document.getElementById('authModal').style.display = 'flex';
@@ -227,13 +215,11 @@
             win.document.close();
         }
 
-        // Admin Save
         document.getElementById('saveGameBtn').onclick = async () => {
             await addDoc(collection(db, "games"), { title: document.getElementById('gameTitle').value, emoji: document.getElementById('gameEmoji').value, html: document.getElementById('gameHtml').value, isMobile: document.getElementById('gameIsMobile').checked, createdAt: new Date() });
             closeModal('addGameModal');
         };
 
-        // Init Theme
         document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
     </script>
 </body>
