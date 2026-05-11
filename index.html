@@ -7,196 +7,113 @@
     <style>
         :root { --bg-color: #f4f4f9; --text-color: #333333; --card-bg: #ffffff; --card-hover: #eeeeee; --primary-color: #6200ea; --btn-text: #ffffff; --border-color: #cccccc; --dropdown-bg: #ffffff; }
         [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-hover: #2c2c2c; --primary-color: #bb86fc; --btn-text: #121212; --border-color: #444444; --dropdown-bg: #252525; }
-        
         body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; overflow: hidden; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background-color: var(--card-bg); box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; z-index: 1000; }
-        h1 { margin: 0; font-size: 1.4rem; letter-spacing: 1px; }
         .controls { display: flex; align-items: center; gap: 15px; position: relative; }
         .user-info { font-weight: bold; color: var(--primary-color); font-size: 0.95rem; }
-        
-        button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s ease; }
-        button:hover { opacity: 0.85; transform: translateY(-1px); }
+        button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .icon-btn { padding: 8px; font-size: 1.3rem; background: transparent; color: var(--text-color); border: none; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-        .icon-btn:hover { background: var(--card-hover); }
-        
-        .dropdown { position: absolute; top: 55px; right: 0; background-color: var(--dropdown-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 200px; display: none; flex-direction: column; overflow: hidden; animation: slideDown 0.2s ease-out; }
+        .dropdown { position: absolute; top: 55px; right: 0; background-color: var(--dropdown-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 200px; display: none; flex-direction: column; overflow: hidden; }
         .dropdown.show { display: flex; }
         .dropdown-item { padding: 12px 15px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
-        .dropdown-item:last-child { border-bottom: none; color: #cf6679; }
-        .dropdown-item:hover { background: var(--card-hover); }
-        .admin-toggle-item { background: rgba(187, 134, 252, 0.1); font-weight: bold; }
-        
-        main { padding: 30px 40px; height: calc(100vh - 80px); overflow-y: auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; align-items: start; }
-        .game-card { position: relative; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; transition: all 0.4s ease; display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; }
-        .game-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
-        .game-card .emoji-icon { font-size: 4rem; margin-bottom: 10px; display: block; }
-
-        .admin-actions { display: flex; gap: 10px; justify-content: center; margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border-color); }
-        .edit-btn { background: #03dac6; color: #000; font-size: 0.8rem; padding: 5px 10px; }
-        .delete-btn { background: #cf6679; color: #000; font-size: 0.8rem; padding: 5px 10px; }
-        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; padding: 30px 40px; align-items: start; }
+        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; transition: transform 0.3s; }
+        .game-card:hover { transform: translateY(-5px); }
         #gameOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 20000; }
         #gameFrame { width: 100%; height: 100%; border: none; }
         #closeGameBtn { position: absolute; top: 20px; right: 20px; z-index: 20001; background: #ff5252; color: white; padding: 10px 15px; border-radius: 8px; font-weight: bold; }
-
-        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-        .modal-content { background-color: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 450px; display: flex; flex-direction: column; gap: 12px; position: relative; }
-        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; }
-        
-        input, textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-color); color: var(--text-color); box-sizing: border-box; }
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 450px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+        .admin-actions { display: flex; gap: 10px; justify-content: center; margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border-color); }
         .hidden { display: none !important; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
-
-    <script>
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function toggleDropdown() { document.getElementById('settingsDropdown').classList.toggle('show'); }
-        function closeGame() { 
-            document.getElementById('gameOverlay').style.display = 'none'; 
-            document.getElementById('gameFrame').srcdoc = ""; 
-        }
-        window.onclick = function(e) { if (!e.target.matches('.icon-btn')) { const d = document.getElementById('settingsDropdown'); if (d && d.classList.contains('show')) d.classList.remove('show'); } }
-    </script>
-
     <header>
-        <h1>🎮 Online Game Hub</h1>
+        <h1>🎮 Game Hub</h1>
         <div class="controls">
             <span id="userInfo" class="user-info hidden"></span>
             <button id="loginBtn" onclick="openModal('authModal')">Přihlásit se</button>
             <button id="settingsToggleBtn" class="hidden icon-btn" onclick="toggleDropdown()">⚙️</button>
             <div id="settingsDropdown" class="dropdown">
-                <div class="dropdown-item hidden admin-toggle-item" id="btnAdminMode">🛠️ Admin mód: OFF</div>
+                <div class="dropdown-item hidden" id="btnAdminMode" style="background:rgba(187,134,252,0.1)">🛠️ Admin mód: OFF</div>
                 <div class="dropdown-item" id="btnChangeNick">👤 Změnit Nick</div>
                 <div class="dropdown-item" id="btnToggleTheme">🌓 Změnit Motiv</div>
-                <div class="dropdown-item" id="btnLogout">🚪 Odhlásit se</div>
+                <div class="dropdown-item" onclick="location.reload()">🚪 Odhlásit se</div>
             </div>
         </div>
     </header>
 
-    <main>
-        <div id="adminPanel" class="hidden" style="margin-bottom: 20px; text-align: right;">
-            <button onclick="prepareNewGame()">+ Přidat hru</button>
-        </div>
-        <div class="grid" id="gameGrid"></div>
-    </main>
+    <main id="gameGrid" class="grid"></main>
 
     <div id="gameOverlay">
         <button id="closeGameBtn" onclick="closeGame()">❌ Zavřít hru</button>
-        <iframe id="gameFrame" src=""></iframe>
+        <iframe id="gameFrame"></iframe>
     </div>
 
-    <div id="authModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('authModal')">&times;</span><h2 id="authTitle">Přihlášení</h2><input type="email" id="emailInput" placeholder="E-mail"><input type="password" id="passwordInput" placeholder="Heslo"><button id="submitAuthBtn">Potvrdit</button><p style="text-align: center; font-size: 0.9em; cursor: pointer; color: var(--primary-color);" id="toggleAuthMode">Registrovat se</p><button id="googleLoginBtn" class="google-btn">Google Login</button></div></div>
-    <div id="nickModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('nickModal')">&times;</span><h2>Změna Nicku</h2><input type="text" id="settingsNickInput"><button id="updateNickBtn">Uložit</button></div></div>
-    <div id="gameModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('gameModal')">&times;</span><h2 id="gameModalTitle">Hra</h2><input type="hidden" id="editGameId"><input type="text" id="gameTitle" placeholder="Název"><input type="text" id="gameEmoji" placeholder="Emoji"><div style="display:flex;gap:10px;align-items:center;"><input type="checkbox" id="gameIsMobile"><label for="gameIsMobile">Pro mobil 📱</label></div><textarea id="gameHtml" rows="6" placeholder="HTML kód..."></textarea><button id="saveGameBtn">Uložit</button></div></div>
-    <div id="lobbyModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('lobbyModal')">&times;</span><h2 id="lobbyGameTitle">Lobby</h2><div id="lobbyActions"><button id="createRoomBtn" style="width:100%;">Vytvořit</button><input type="text" id="roomCodeInput" style="text-align:center;margin-top:10px;" placeholder="Kód"><button id="joinRoomBtn" style="width:100%;margin-top:10px;background:#03dac6;color:#000;">Připojit se</button></div><div id="lobbyWaiting" class="hidden"><p style="text-align:center;">Kód:</p><div style="font-size:2.5rem;text-align:center;font-weight:bold;" id="displayRoomCode">XXXXX</div></div></div></div>
+    <div id="authModal" class="modal"><div class="modal-content"><h2>Přihlášení</h2><input type="email" id="emailInput" placeholder="Email"><input type="password" id="passwordInput" placeholder="Heslo"><button id="submitAuthBtn">Vstup</button></div></div>
+    <div id="lobbyModal" class="modal"><div class="modal-content"><h2 id="lobbyTitle">Lobby</h2><button id="createRoomBtn">Vytvořit místnost</button><hr><input type="text" id="roomCodeInput" placeholder="Kód místnosti"><button id="joinRoomBtn" style="background:#03dac6">Připojit se</button><div id="waitingArea" class="hidden"><p>Kód: <b id="displayCode" style="font-size:2rem"></b></p></div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, updateProfile } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, query, getCountFromServer, orderBy } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4",
-            authDomain: "gamehub-7fb7c.firebaseapp.com",
-            projectId: "gamehub-7fb7c",
-            storageBucket: "gamehub-7fb7c.firebasestorage.app",
-            messagingSenderId: "981399258007",
-            appId: "1:981399258007:web:abb3110a97d0069241fad2"
-        };
-
+        const firebaseConfig = { apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4", authDomain: "gamehub-7fb7c.firebaseapp.com", projectId: "gamehub-7fb7c", storageBucket: "gamehub-7fb7c.firebasestorage.app", messagingSenderId: "981399258007", appId: "1:981399258007:web:abb3110a97d0069241fad2" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const googleProvider = new GoogleAuthProvider();
 
-        const ADMIN_EMAIL = "zitkatomik007@gmail.com"; 
-        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+        window.toggleDropdown = () => document.getElementById('settingsDropdown').classList.toggle('show');
+        window.closeGame = () => { document.getElementById('gameOverlay').style.display = 'none'; document.getElementById('gameFrame').srcdoc = ""; };
+
         let isAdminMode = false;
-        let isLoginMode = true;
-
-        document.getElementById('toggleAuthMode').onclick = (e) => { isLoginMode = !isLoginMode; document.getElementById('authTitle').innerText = isLoginMode ? 'Přihlášení' : 'Registrace'; e.target.innerText = isLoginMode ? 'Registrovat se' : 'Máš účet? Přihlas se'; };
-        document.getElementById('submitAuthBtn').onclick = async () => {
-            const email = document.getElementById('emailInput').value;
-            const pass = document.getElementById('passwordInput').value;
-            try {
-                if (isLoginMode) await signInWithEmailAndPassword(auth, email, pass);
-                else {
-                    const res = await createUserWithEmailAndPassword(auth, email, pass);
-                    const snap = await getCountFromServer(collection(db, "users_meta"));
-                    await updateProfile(res.user, { displayName: `user-${snap.data().count + 1}` });
-                    await setDoc(doc(db, "users_meta", res.user.uid), { registeredAt: new Date() });
-                }
-                closeModal('authModal');
-            } catch (e) { alert(e.message); }
-        };
-        document.getElementById('googleLoginBtn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); closeModal('authModal'); } catch (e) { alert(e.message); } };
-        document.getElementById('btnLogout').onclick = () => signOut(auth);
-
-        document.getElementById('btnAdminMode').onclick = () => {
-            isAdminMode = !isAdminMode;
-            document.getElementById('btnAdminMode').innerText = isAdminMode ? '🛠️ Admin mód: ON' : '🛠️ Admin mód: OFF';
-            document.getElementById('adminPanel').classList.toggle('hidden', !isAdminMode);
-            renderGames();
-        };
-
-        window.prepareNewGame = () => {
-            document.getElementById('editGameId').value = ""; document.getElementById('gameTitle').value = "";
-            document.getElementById('gameEmoji').value = ""; document.getElementById('gameIsMobile').checked = false;
-            document.getElementById('gameHtml').value = ""; document.getElementById('gameModalTitle').innerText = "Nová hra";
-            openModal('gameModal');
-        };
-
         let allGames = [];
-        onSnapshot(query(collection(db, "games"), orderBy("createdAt", "desc")), (snap) => {
-            allGames = []; snap.forEach(d => allGames.push({ id: d.id, ...d.data() }));
-            renderGames();
+        let currentRoomId = "";
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('userInfo').innerText = user.displayName || user.email;
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('settingsToggleBtn').classList.remove('hidden');
+                if (user.email === "zitkatomik007@gmail.com") document.getElementById('btnAdminMode').classList.remove('hidden');
+            }
         });
 
-        function renderGames() {
+        document.getElementById('submitAuthBtn').onclick = async () => {
+            try { await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); closeModal('authModal'); } catch (e) { alert(e.message); }
+        };
+
+        onSnapshot(query(collection(db, "games"), orderBy("createdAt", "desc")), (snap) => {
+            allGames = []; snap.forEach(d => allGames.push({ id: d.id, ...d.data() }));
+            render();
+        });
+
+        function render() {
             const grid = document.getElementById('gameGrid'); grid.innerHTML = '';
-            allGames.forEach(game => {
-                if (isMobileDevice && !game.isMobile) return;
+            allGames.forEach(g => {
                 const card = document.createElement('div'); card.className = 'game-card';
-                let adminHtml = isAdminMode ? `<div class="admin-actions"><button class="edit-btn" onclick="editGame('${game.id}')">Edit</button><button class="delete-btn" onclick="deleteGame('${game.id}')">Smazat</button></div>` : '';
-                card.innerHTML = `<div onclick="openLobby('${game.id}')" style="cursor:pointer">${game.isMobile ? '<div style="position:absolute;top:10px;right:10px;">📱</div>' : ''}<span class="emoji-icon">${game.emoji}</span><h3>${game.title}</h3></div>${adminHtml}`;
+                card.innerHTML = `<div onclick="openLobby('${g.id}')" style="cursor:pointer"><span style="font-size:4rem">${g.emoji}</span><h3>${g.title}</h3></div>`;
                 grid.appendChild(card);
             });
         }
 
-        window.editGame = (id) => {
-            const g = allGames.find(x => x.id === id);
-            document.getElementById('editGameId').value = id; document.getElementById('gameTitle').value = g.title;
-            document.getElementById('gameEmoji').value = g.emoji; document.getElementById('gameIsMobile').checked = g.isMobile;
-            document.getElementById('gameHtml').value = g.html; document.getElementById('gameModalTitle').innerText = "Upravit";
-            openModal('gameModal');
-        };
-
-        window.deleteGame = async (id) => { if (confirm("Smazat?")) await deleteDoc(doc(db, "games", id)); };
-
-        document.getElementById('saveGameBtn').onclick = async () => {
-            const id = document.getElementById('editGameId').value;
-            const data = { title: document.getElementById('gameTitle').value, emoji: document.getElementById('gameEmoji').value, html: document.getElementById('gameHtml').value, isMobile: document.getElementById('gameIsMobile').checked, createdAt: new Date() };
-            if (id) await updateDoc(doc(db, "games", id), data); else await addDoc(collection(db, "games"), data);
-            closeModal('gameModal');
-        };
-
-        let curHtml = "", curId = "";
         window.openLobby = (id) => {
-            if (!auth.currentUser) return openModal('authModal');
-            const g = allGames.find(x => x.id === id); curHtml = g.html;
-            document.getElementById('lobbyGameTitle').innerText = g.title;
-            document.getElementById('lobbyActions').classList.remove('hidden'); document.getElementById('lobbyWaiting').classList.add('hidden');
+            const g = allGames.find(x => x.id === id);
+            window.selectedGameHtml = g.html;
+            document.getElementById('lobbyTitle').innerText = g.title;
+            document.getElementById('waitingArea').classList.add('hidden');
             openModal('lobbyModal');
         };
 
         document.getElementById('createRoomBtn').onclick = async () => {
             const code = Math.random().toString(36).substring(2, 7).toUpperCase();
-            curId = code; document.getElementById('displayRoomCode').innerText = code;
-            document.getElementById('lobbyActions').classList.add('hidden'); document.getElementById('lobbyWaiting').classList.remove('hidden');
+            currentRoomId = code;
+            document.getElementById('displayCode').innerText = code;
+            document.getElementById('waitingArea').classList.remove('hidden');
             const ref = doc(db, "rooms", code);
             await setDoc(ref, { hostId: auth.currentUser.uid, status: "waiting", board: Array(9).fill(null), turn: 'X' });
             onSnapshot(ref, (s) => { if (s.data()?.status === "playing") launch(true); });
@@ -204,43 +121,20 @@
 
         document.getElementById('joinRoomBtn').onclick = async () => {
             const code = document.getElementById('roomCodeInput').value.toUpperCase();
-            const ref = doc(db, "rooms", code); const s = await getDoc(ref);
+            const ref = doc(db, "rooms", code);
+            const s = await getDoc(ref);
             if (s.exists() && s.data().status === "waiting") {
-                curId = code; await updateDoc(ref, { guestId: auth.currentUser.uid, status: "playing" }); launch(false);
-            } else alert("Neexistuje");
+                currentRoomId = code;
+                await updateDoc(ref, { guestId: auth.currentUser.uid, status: "playing" });
+                launch(false);
+            } else alert("Místnost nenalezena");
         };
 
         function launch(isHost) {
             closeModal('lobbyModal');
             document.getElementById('gameOverlay').style.display = 'block';
-            document.getElementById('gameFrame').srcdoc = `<script>window.ROOM_ID="${curId}"; window.IS_HOST=${isHost};<\/script>${curHtml}`;
+            document.getElementById('gameFrame').srcdoc = `<script>window.ROOM_ID="${currentRoomId}"; window.IS_HOST=${isHost};<\/script>${window.selectedGameHtml}`;
         }
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('userInfo').innerText = user.displayName;
-                document.getElementById('userInfo').classList.remove('hidden');
-                document.getElementById('loginBtn').classList.add('hidden');
-                document.getElementById('settingsToggleBtn').classList.remove('hidden');
-                if (user.email === ADMIN_EMAIL) document.getElementById('btnAdminMode').classList.remove('hidden');
-            } else {
-                document.getElementById('userInfo').classList.add('hidden');
-                document.getElementById('loginBtn').classList.remove('hidden');
-                document.getElementById('settingsToggleBtn').classList.add('hidden');
-            }
-        });
-
-        document.getElementById('btnChangeNick').onclick = () => { document.getElementById('settingsNickInput').value = auth.currentUser.displayName; openModal('nickModal'); };
-        document.getElementById('updateNickBtn').onclick = async () => {
-            const n = document.getElementById('settingsNickInput').value.trim();
-            if (n.toLowerCase().startsWith("user-")) return alert("Vyhrazeno");
-            await updateProfile(auth.currentUser, { displayName: n }); location.reload();
-        };
-        document.getElementById('btnToggleTheme').onclick = () => {
-            let nt = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            document.body.setAttribute('data-theme', nt); localStorage.setItem('theme', nt);
-        };
-        document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
     </script>
 </body>
 </html>
