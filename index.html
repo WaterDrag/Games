@@ -77,7 +77,20 @@
         <iframe id="gameFrame"></iframe>
     </div>
 
-    <div id="authModal" class="modal"><div class="modal-content"><h2>Přihlášení</h2><input type="email" id="emailInput" placeholder="Email"><input type="password" id="passwordInput" placeholder="Heslo"><button id="submitAuthBtn">Vstoupit</button></div></div>
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <h2>Přihlášení / Registrace</h2>
+            <input type="email" id="emailInput" placeholder="Email">
+            <input type="password" id="passwordInput" placeholder="Heslo">
+            <div style="display:flex; gap:10px;">
+                <button id="submitAuthBtn" style="flex:1;">Přihlásit se</button>
+                <button id="registerBtn" style="flex:1; background:#03dac6; color:#000;">Registrovat</button>
+            </div>
+            <div style="text-align: center; margin: 10px 0; color: #888;">nebo</div>
+            <button id="googleLoginBtn" style="background:#db4437; color:white;">Přihlásit přes Google</button>
+        </div>
+    </div>
+    
     <div id="nickModal" class="modal"><div class="modal-content"><h2>Změna Nicku</h2><input type="text" id="newNickInput" placeholder="Nová přezdívka"><button id="saveNickBtn">Uložit</button></div></div>
     
     <div id="gameModal" class="modal">
@@ -97,13 +110,15 @@
     
     <div id="lobbyModal" class="modal">
         <div class="modal-content">
-            <h2 id="lobbyTitle">Lobby</h2>
+            <h2 id="lobbyTitle" style="margin-top: 0;">Lobby</h2>
             
             <div id="lobbyInitialView">
                 <button id="createRoomBtn">Vytvořit místnost</button>
                 <div style="margin: 15px 0; text-align:center; font-weight:bold;">NEBO</div>
                 <input type="text" id="roomCodeInput" placeholder="Kód místnosti">
                 <button id="joinRoomBtn" style="background:#03dac6; color:#000;">Připojit se</button>
+                
+                <button onclick="closeLobby()" style="background:transparent; color:var(--text-color); border:1px solid var(--border-color); margin-top:15px; width:100%;">Zrušit</button>
             </div>
 
             <div id="lobbyWaitingView" class="hidden">
@@ -113,22 +128,24 @@
                 <h3>Připojení hráči (<span id="playerCountDisplay">1/2</span>):</h3>
                 <div class="player-list" id="connectedPlayersList"></div>
                 
-                <button id="hostStartGameBtn" class="hidden" style="background:#03dac6; color:#000; width:100%; font-size:1.2rem;">🚀 Spustit hru</button>
-                <div id="guestWaitingMsg" class="hidden" style="text-align:center; color:var(--primary-color); font-weight:bold;">Čekání na hostitele...</div>
+                <button id="hostStartGameBtn" class="hidden" style="background:#03dac6; color:#000; width:100%; font-size:1.2rem; margin-bottom:10px;">🚀 Spustit hru</button>
+                <div id="guestWaitingMsg" class="hidden" style="text-align:center; color:var(--primary-color); font-weight:bold; margin-bottom:15px;">Čekání na hostitele...</div>
+                
+                <button onclick="closeLobby()" style="background:#ff5252; color:white; width:100%;">Odejít z čekárny</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-        // OPRAVA: Vráceny chybějící příkazy addDoc a deleteDoc!
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, arrayUnion, onSnapshot, query, orderBy, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4", authDomain: "gamehub-7fb7c.firebaseapp.com", projectId: "gamehub-7fb7c", storageBucket: "gamehub-7fb7c.firebasestorage.app", messagingSenderId: "981399258007", appId: "1:981399258007:web:abb3110a97d0069241fad2" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
 
         let isGameRunning = false;
         let isAdminMode = false;
@@ -144,10 +161,24 @@
 
         window.onclick = function(event) {
             if (!event.target.closest('.controls')) closeDropdown();
+            // Pokud klikneme mimo okno Lobby, nic se nestane (ochrana proti vypadnutí)
             if (event.target.classList.contains('modal') && event.target.id !== 'lobbyModal') {
                 event.target.style.display = 'none';
             }
         }
+
+        // PŘIDÁNO: Funkce pro opuštění Lobby
+        window.closeLobby = () => {
+            const isWaiting = !document.getElementById('lobbyWaitingView').classList.contains('hidden');
+            if (isWaiting) {
+                // Pokud už je v místnosti připojený, bezpečný odchod znamená obnovení stránky 
+                // (vyčistí Firebase listenery a spojení)
+                location.reload();
+            } else {
+                // Jinak jen zavřeme okno
+                closeModal('lobbyModal');
+            }
+        };
 
         window.closeGame = async () => { 
             if(currentRoomId) await updateDoc(doc(db, "rooms", currentRoomId), { status: "closed" });
@@ -164,12 +195,45 @@
                 document.getElementById('loginBtn').classList.add('hidden');
                 document.getElementById('settingsToggleBtn').classList.remove('hidden');
                 if (user.email === "zitkatomik007@gmail.com") document.getElementById('btnAdminMode').classList.remove('hidden');
+            } else {
+                document.getElementById('userInfo').classList.add('hidden');
+                document.getElementById('loginBtn').classList.remove('hidden');
+                document.getElementById('settingsToggleBtn').classList.add('hidden');
+                document.getElementById('btnAdminMode').classList.add('hidden');
+                isAdminMode = false;
             }
         });
 
+        // --- AUTHENTIKACE ---
         document.getElementById('submitAuthBtn').onclick = async () => {
-            try { await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); closeModal('authModal'); } catch (e) { alert("Chyba přihlášení"); }
+            try { 
+                await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); 
+                closeModal('authModal'); 
+            } catch (e) { alert("Chyba přihlášení: " + e.message); }
         };
+
+        document.getElementById('registerBtn').onclick = async () => {
+            try { 
+                const email = document.getElementById('emailInput').value;
+                const password = document.getElementById('passwordInput').value;
+                if (!email || !password) return alert("Vyplňte email a heslo.");
+                
+                const res = await createUserWithEmailAndPassword(auth, email, password); 
+                const defaultName = email.split('@')[0];
+                await updateProfile(res.user, { displayName: defaultName });
+                closeModal('authModal'); 
+                location.reload(); 
+            } catch (e) { alert("Chyba registrace: " + e.message); }
+        };
+
+        document.getElementById('googleLoginBtn').onclick = async () => {
+            try { 
+                await signInWithPopup(auth, googleProvider); 
+                closeModal('authModal'); 
+            } catch (e) { alert("Chyba přihlášení přes Google: " + e.message); }
+        };
+        // --------------------
+
         document.getElementById('btnLogout').onclick = () => { signOut(auth); location.reload(); };
 
         document.getElementById('btnChangeNick').onclick = () => { document.getElementById('newNickInput').value = auth.currentUser.displayName || ""; openModal('nickModal'); };
@@ -188,7 +252,7 @@
             document.getElementById('editGameId').value = ""; document.getElementById('gameTitle').value = "";
             document.getElementById('gameEmoji').value = ""; document.getElementById('gameHtml').value = "";
             document.getElementById('gameIsMobile').checked = false; 
-            document.getElementById('gameMaxPlayers').value = 2; // Default
+            document.getElementById('gameMaxPlayers').value = 2; 
             document.getElementById('gameModalTitle').innerText = "Nová hra";
             openModal('gameModal');
         };
@@ -205,7 +269,6 @@
 
         window.deleteGame = async (id) => { if(confirm("Smazat hru?")) await deleteDoc(doc(db, "games", id)); };
 
-        // OPRAVA Uložení: Přidáno do try-catch a lépe ošetřené vytvoření nové hry.
         document.getElementById('saveGameBtn').onclick = async () => {
             try {
                 const id = document.getElementById('editGameId').value;
@@ -334,6 +397,10 @@
                 }
 
                 if (d.status === "playing") {
+                    if (!d.players || d.players.length < 2) {
+                        alert("⚠️ CHYBA: Soupeř se připojil ze staré verze (nemá čekárnu). Zruš tuto místnost a ať si soupeř obnoví stránku!");
+                        return;
+                    }
                     if (roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; }
                     launch(amIHost, d.players);
                 }
