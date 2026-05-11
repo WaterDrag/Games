@@ -29,7 +29,7 @@
         .dropdown-item:hover { background: var(--card-hover); }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; padding: 30px 40px; align-items: start; height: calc(100vh - 80px); overflow-y: auto; }
-        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 200px; transition: transform 0.3s; position: relative; }
+        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 180px; transition: transform 0.3s; position: relative; }
         .game-card:hover { transform: translateY(-5px); }
 
         #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 20000; }
@@ -40,8 +40,6 @@
         .modal-content { background: var(--card-bg); padding: 30px; border-radius: 16px; width: 95%; max-width: 500px; display: flex; flex-direction: column; gap: 12px; position: relative; max-height: 90vh; overflow-y: auto; }
         input, textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); color: var(--text-color); box-sizing: border-box; }
         .hidden { display: none !important; }
-
-        .admin-btn-container { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
     </style>
 </head>
 <body data-theme="dark">
@@ -88,7 +86,7 @@
         let isAdminMode = false;
         let allGames = [];
         let currentRoomId = "";
-        let roomStatusUnsub = null; // Tady je ten klíč k opravě!
+        let roomStatusUnsub = null;
 
         window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; closeDropdown(); };
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
@@ -100,7 +98,12 @@
             if (event.target.classList.contains('modal')) event.target.style.display = 'none';
         }
 
-        window.closeGame = () => { 
+        // UPRAVENO: Když jeden zavře, zapíše "closed", aby se to zavřelo i druhému
+        window.closeGame = async () => { 
+            if(currentRoomId) {
+                const ref = doc(db, "rooms", currentRoomId);
+                await updateDoc(ref, { status: "closed" });
+            }
             isGameRunning = false;
             document.getElementById('gameOverlay').style.display = 'none'; 
             document.getElementById('gameFrame').srcdoc = ""; 
@@ -186,12 +189,18 @@
             currentRoomId = code; document.getElementById('displayCode').innerText = code;
             document.getElementById('waitingArea').classList.remove('hidden');
             const ref = doc(db, "rooms", code);
-            await setDoc(ref, { hostId: auth.currentUser.uid, status: "waiting", board: Array(9).fill(null), turn: 'X' });
+            await setDoc(ref, { 
+                hostId: auth.currentUser.uid, 
+                status: "waiting", 
+                board: Array(9).fill(null), 
+                turn: 'X',
+                rematchHost: false,
+                rematchGuest: false
+            });
             
-            // TADY SE TO REFRESHUJE: Musíme ten poslouchač po startu zabít!
             roomStatusUnsub = onSnapshot(ref, (s) => { 
                 if (s.data()?.status === "playing") {
-                    if (roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; } // KILL
+                    if (roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; }
                     launch(true);
                 }
             });
