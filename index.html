@@ -32,9 +32,11 @@
         .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 180px; transition: transform 0.3s; position: relative; }
         .game-card:hover { transform: translateY(-5px); }
 
-        #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 20000; }
-        #gameFrame { width: 100%; height: 100%; border: none; }
-        #closeGameBtn { position: absolute; top: 20px; right: 20px; z-index: 20001; background: #ff5252; color: white; padding: 10px 15px; border-radius: 8px; font-weight: bold; border:none; cursor:pointer; }
+        /* OPRAVA: Overlay je nyní Flexbox a má vlastní lištu, aby se nepřekrývaly prvky */
+        #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 20000; flex-direction: column; }
+        .overlay-bar { height: 50px; background: var(--card-bg); display: flex; justify-content: flex-end; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border-color); z-index: 20001; }
+        #gameFrame { width: 100%; flex-grow: 1; border: none; }
+        #closeGameBtn { background: #ff5252; color: white; padding: 8px 15px; border-radius: 8px; font-weight: bold; border:none; cursor:pointer; }
         
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 10000; }
         .modal-content { background: var(--card-bg); padding: 30px; border-radius: 16px; width: 95%; max-width: 500px; display: flex; flex-direction: column; gap: 12px; position: relative; max-height: 90vh; overflow-y: auto; }
@@ -63,7 +65,9 @@
     <main id="gameGrid" class="grid"></main>
 
     <div id="gameOverlay">
-        <button id="closeGameBtn" onclick="closeGame()">❌ Zavřít hru</button>
+        <div class="overlay-bar">
+            <button id="closeGameBtn" onclick="closeGame()">❌ Zavřít hru</button>
+        </div>
         <iframe id="gameFrame"></iframe>
     </div>
 
@@ -189,7 +193,6 @@
             document.getElementById('waitingArea').classList.remove('hidden');
             const ref = doc(db, "rooms", code);
             
-            // PŘIDÁNO: Zapsání nicku hostitele (hostName) do databáze
             await setDoc(ref, { 
                 hostId: auth.currentUser.uid, 
                 hostName: auth.currentUser.displayName || "Neznámý", 
@@ -214,7 +217,6 @@
             if (s.exists() && s.data().status === "waiting") {
                 currentRoomId = code; 
                 
-                // PŘIDÁNO: Zapsání nicku hosta (guestName) do databáze
                 await updateDoc(ref, { 
                     guestId: auth.currentUser.uid, 
                     guestName: auth.currentUser.displayName || "Neznámý",
@@ -230,7 +232,8 @@
             closeModal('lobbyModal');
             const frame = document.getElementById('gameFrame');
             frame.srcdoc = `<script>window.ROOM_ID="${currentRoomId}"; window.IS_HOST=${isHost};<\/script>${window.selectedGameHtml}`;
-            document.getElementById('gameOverlay').style.display = 'block';
+            // OPRAVA: Voláme 'flex', protože Overlay je nyní flex kontejner
+            document.getElementById('gameOverlay').style.display = 'flex'; 
         }
     </script>
 </body>
