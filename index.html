@@ -6,82 +6,57 @@
     <title>Online Game Hub</title>
     <style>
         /* --- CSS: Styling & Theme Variables --- */
-        :root {
-            --bg-color: #f4f4f9; --text-color: #333333;
-            --card-bg: #ffffff; --card-hover: #eeeeee;
-            --primary-color: #6200ea; --btn-text: #ffffff;
-            --border-color: #cccccc;
-        }
-        [data-theme="dark"] {
-            --bg-color: #121212; --text-color: #e0e0e0;
-            --card-bg: #1e1e1e; --card-hover: #2c2c2c;
-            --primary-color: #bb86fc; --btn-text: #121212;
-            --border-color: #444444;
-        }
-
-        body {
-            background-color: var(--bg-color); color: var(--text-color);
-            font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 40px; background-color: var(--card-bg);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
+        :root { --bg-color: #f4f4f9; --text-color: #333333; --card-bg: #ffffff; --card-hover: #eeeeee; --primary-color: #6200ea; --btn-text: #ffffff; --border-color: #cccccc; }
+        [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-hover: #2c2c2c; --primary-color: #bb86fc; --btn-text: #121212; --border-color: #444444; }
+        
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background-color: var(--card-bg); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1 { margin: 0; font-size: 1.5rem; }
+        
         .controls { display: flex; align-items: center; gap: 15px; }
         .user-info { font-weight: bold; color: var(--primary-color); }
         .admin-badge { background: #ff0266; color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 4px; vertical-align: top; margin-left: 5px; }
-
-        button {
-            background-color: var(--primary-color); color: var(--btn-text);
-            border: none; padding: 10px 20px; border-radius: 5px;
-            cursor: pointer; font-weight: bold; transition: opacity 0.2s;
-        }
-        button:hover { opacity: 0.8; }
         
+        button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        button:hover { opacity: 0.8; }
         .google-btn { background-color: #db4437; color: white; width: 100%; margin-top: 10px; }
-
+        
         main { padding: 40px; }
+        
+        /* Grid je automaticky responzivní */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; }
-
-        .game-card {
-            background-color: var(--card-bg); border: 1px solid var(--border-color);
-            border-radius: 10px; padding: 20px; text-align: center;
-            cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; justify-content: center; min-height: 150px;
-        }
+        
+        .game-card { position: relative; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; justify-content: center; min-height: 150px; }
         .game-card:hover { transform: translateY(-5px); background-color: var(--card-hover); }
         .game-card .emoji-icon { font-size: 5rem; margin-bottom: 15px; display: block; }
         .game-card h3 { margin: 0; }
-
-        .modal {
-            display: none; position: fixed; z-index: 10; left: 0; top: 0;
-            width: 100%; height: 100%; background-color: rgba(0,0,0,0.6);
-            justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background-color: var(--card-bg); padding: 30px; border-radius: 10px;
-            width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; position: relative;
-        }
+        
+        /* Odznáček pro mobilní podporu */
+        .mobile-badge { position: absolute; top: 10px; right: 10px; font-size: 1.5rem; background: var(--bg-color); border-radius: 50%; padding: 5px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        
+        .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
+        .modal-content { background-color: var(--card-bg); padding: 30px; border-radius: 10px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; }
-        input, textarea {
-            width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border-color);
-            border-radius: 5px; background-color: var(--bg-color); color: var(--text-color); box-sizing: border-box;
-        }
+        input[type="text"], input[type="email"], input[type="password"], textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border-color); border-radius: 5px; background-color: var(--bg-color); color: var(--text-color); box-sizing: border-box; }
         
-        .room-code-display {
-            font-size: 2.5rem; letter-spacing: 5px; color: var(--primary-color);
-            text-align: center; margin: 10px 0; font-family: monospace; font-weight: bold;
-        }
-        .code-input {
-            text-transform: uppercase; font-size: 1.5rem; text-align: center; letter-spacing: 3px; font-family: monospace;
-        }
-        
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 5px; cursor: pointer; }
+        .checkbox-group input { width: 20px; height: 20px; cursor: pointer; }
+        .checkbox-group label { cursor: pointer; font-weight: bold; }
+
+        .room-code-display { font-size: 2.5rem; letter-spacing: 5px; color: var(--primary-color); text-align: center; margin: 10px 0; font-family: monospace; font-weight: bold; }
+        .code-input { text-transform: uppercase; font-size: 1.5rem; text-align: center; letter-spacing: 3px; font-family: monospace; }
         .hidden { display: none !important; }
         .divider { text-align: center; margin: 10px 0; opacity: 0.5; font-size: 0.9em; }
+
+        /* --- Responzivní design pro telefony --- */
+        @media (max-width: 600px) {
+            header { flex-direction: column; padding: 20px; gap: 15px; }
+            .controls { flex-wrap: wrap; justify-content: center; }
+            main { padding: 20px; }
+            .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
+            .game-card .emoji-icon { font-size: 4rem; }
+            h1 { text-align: center; }
+        }
     </style>
 </head>
 <body>
@@ -98,29 +73,23 @@
     </header>
 
     <main>
-        <div class="grid" id="gameGrid">
-            </div>
+        <div class="grid" id="gameGrid"></div>
     </main>
 
-    <div id="authModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeAuthModal">&times;</span>
-            <h2 id="authTitle">Přihlášení</h2>
-            <input type="email" id="emailInput" placeholder="E-mail" required>
-            <input type="password" id="passwordInput" placeholder="Heslo" required>
-            <button id="submitAuthBtn">Přihlásit</button>
-            <p style="text-align: center; font-size: 0.9em; cursor: pointer; color: var(--primary-color);" id="toggleAuthMode">Nemáš účet? Registruj se zde.</p>
-            <div class="divider">NEBO</div>
-            <button id="googleLoginBtn" class="google-btn">Přihlásit přes Google</button>
-        </div>
-    </div>
-
+    <div id="authModal" class="modal"><div class="modal-content"><span class="close-btn" id="closeAuthModal">&times;</span><h2 id="authTitle">Přihlášení</h2><input type="email" id="emailInput" placeholder="E-mail" required><input type="password" id="passwordInput" placeholder="Heslo" required><button id="submitAuthBtn">Přihlásit</button><p style="text-align: center; font-size: 0.9em; cursor: pointer; color: var(--primary-color);" id="toggleAuthMode">Nemáš účet? Registruj se zde.</p><div class="divider">NEBO</div><button id="googleLoginBtn" class="google-btn">Přihlásit přes Google</button></div></div>
+    
     <div id="addGameModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeAddGameModal">&times;</span>
             <h2>Nová hra (Admin)</h2>
             <input type="text" id="gameTitle" placeholder="Název hry" required>
-            <input type="text" id="gameEmoji" placeholder="Emoji ikona (např. 👾, 🏎️)" required>
+            <input type="text" id="gameEmoji" placeholder="Emoji ikona (např. 👾)" required>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="gameIsMobile">
+                <label for="gameIsMobile">Hratelné i na mobilu 📱</label>
+            </div>
+
             <textarea id="gameHtml" rows="5" placeholder="Sem vlož celý <html> kód hry..." required></textarea>
             <button id="saveGameBtn">Uložit do databáze</button>
         </div>
@@ -130,14 +99,12 @@
         <div class="modal-content">
             <span class="close-btn" id="closeLobbyModal">&times;</span>
             <h2 id="lobbyGameTitle">Multiplayer Místnost</h2>
-            
             <div id="lobbyActions">
                 <button id="createRoomBtn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Vytvořit kód místnosti</button>
                 <div class="divider">NEBO PŘIPOJIT SE K EXISTUJÍCÍ</div>
                 <input type="text" id="roomCodeInput" class="code-input" placeholder="Zadej kód (5 znaků)" maxlength="5">
                 <button id="joinRoomBtn" style="width: 100%; background-color: #03dac6; color: #000;">Připojit se ke hře</button>
             </div>
-
             <div id="lobbyWaiting" class="hidden">
                 <p style="text-align: center; margin-bottom: 0;">Tvůj kód pro připojení:</p>
                 <div class="room-code-display" id="displayRoomCode">XXXXX</div>
@@ -168,105 +135,55 @@
         const ADMIN_EMAIL = "zitkatomik007@gmail.com"; 
         let currentUserUid = null;
 
-        // UI Elements & Modals
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const openAddGameModalBtn = document.getElementById('openAddGameModal');
-        const userInfo = document.getElementById('userInfo');
-        
-        const authModal = document.getElementById('authModal');
-        const addGameModal = document.getElementById('addGameModal');
-        const lobbyModal = document.getElementById('lobbyModal');
-        
-        // --- Auth Logic ---
+        // UI & Auth
+        const [loginBtn, logoutBtn, openAddGameModalBtn, userInfo, authModal, addGameModal, lobbyModal] = ['loginBtn','logoutBtn','openAddGameModal','userInfo','authModal','addGameModal','lobbyModal'].map(id => document.getElementById(id));
         loginBtn.onclick = () => authModal.style.display = 'flex';
         document.getElementById('closeAuthModal').onclick = () => authModal.style.display = 'none';
         document.getElementById('closeAddGameModal').onclick = () => addGameModal.style.display = 'none';
-
+        
         let isLoginMode = true;
-        document.getElementById('toggleAuthMode').onclick = (e) => {
-            isLoginMode = !isLoginMode;
-            document.getElementById('authTitle').innerText = isLoginMode ? 'Přihlášení' : 'Registrace';
-            document.getElementById('submitAuthBtn').innerText = isLoginMode ? 'Přihlásit' : 'Vytvořit účet';
-            e.target.innerText = isLoginMode ? 'Nemáš účet? Registruj se zde.' : 'Máš účet? Přihlas se zde.';
-        };
-
-        document.getElementById('submitAuthBtn').onclick = async () => {
-            const email = document.getElementById('emailInput').value;
-            const password = document.getElementById('passwordInput').value;
-            try {
-                if(isLoginMode) await signInWithEmailAndPassword(auth, email, password);
-                else await createUserWithEmailAndPassword(auth, email, password);
-                authModal.style.display = 'none';
-            } catch (error) { alert("Chyba: " + error.message); }
-        };
-
-        document.getElementById('googleLoginBtn').onclick = async () => {
-            try {
-                await signInWithPopup(auth, googleProvider);
-                authModal.style.display = 'none';
-            } catch (error) { alert("Google Auth Chyba: " + error.message); }
-        };
-
+        document.getElementById('toggleAuthMode').onclick = (e) => { isLoginMode = !isLoginMode; document.getElementById('authTitle').innerText = isLoginMode ? 'Přihlášení' : 'Registrace'; document.getElementById('submitAuthBtn').innerText = isLoginMode ? 'Přihlásit' : 'Vytvořit účet'; e.target.innerText = isLoginMode ? 'Nemáš účet? Registruj se zde.' : 'Máš účet? Přihlas se zde.'; };
+        document.getElementById('submitAuthBtn').onclick = async () => { try { isLoginMode ? await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value) : await createUserWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); authModal.style.display = 'none'; } catch (e) { alert(e.message); } };
+        document.getElementById('googleLoginBtn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); authModal.style.display = 'none'; } catch (e) { alert(e.message); } };
         logoutBtn.onclick = () => signOut(auth);
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserUid = user.uid;
-                let displayName = user.displayName || user.email.split('@')[0];
                 let isAdmin = (user.email === ADMIN_EMAIL);
-                
-                userInfo.innerHTML = `${displayName} ${isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}`;
-                userInfo.classList.remove('hidden');
-                logoutBtn.classList.remove('hidden');
-                loginBtn.classList.add('hidden');
+                userInfo.innerHTML = `${user.displayName || user.email.split('@')[0]} ${isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}`;
+                userInfo.classList.remove('hidden'); logoutBtn.classList.remove('hidden'); loginBtn.classList.add('hidden');
                 if(isAdmin) openAddGameModalBtn.classList.remove('hidden');
             } else {
-                currentUserUid = null;
-                userInfo.classList.add('hidden');
-                logoutBtn.classList.add('hidden');
-                openAddGameModalBtn.classList.add('hidden');
-                loginBtn.classList.remove('hidden');
+                currentUserUid = null; userInfo.classList.add('hidden'); logoutBtn.classList.add('hidden'); openAddGameModalBtn.classList.add('hidden'); loginBtn.classList.remove('hidden');
             }
         });
 
-        // --- Fetch & Render Games ---
+        // Fetch Games
         openAddGameModalBtn.onclick = () => addGameModal.style.display = 'flex';
-
-        onSnapshot(query(collection(db, "games")), (snapshot) => {
-            const grid = document.getElementById('gameGrid');
-            grid.innerHTML = ''; 
-            
-            snapshot.forEach((docSnap) => {
+        onSnapshot(query(collection(db, "games")), (snap) => {
+            document.getElementById('gameGrid').innerHTML = ''; 
+            snap.forEach((docSnap) => {
                 const game = docSnap.data();
-                const card = document.createElement('div');
-                card.className = 'game-card';
-                card.innerHTML = `<span class="emoji-icon">${game.emoji || '🎮'}</span><h3>${game.title}</h3>`;
+                const card = document.createElement('div'); card.className = 'game-card';
                 
-                // Místo přímého spuštění otevřeme Lobby
-                card.onclick = () => openLobby(game.title, game.html, docSnap.id);
-                grid.appendChild(card);
+                // Zjištění, jestli má hra mobilní podporu (přidáme odznáček)
+                const mobileBadge = game.isMobile ? `<div class="mobile-badge" title="Hratelné na mobilu">📱</div>` : '';
+                
+                card.innerHTML = `${mobileBadge}<span class="emoji-icon">${game.emoji || '🎮'}</span><h3>${game.title}</h3>`;
+                card.onclick = () => openLobby(game.title, game.html);
+                document.getElementById('gameGrid').appendChild(card);
             });
         });
 
-        // --- LOBBY LOGIKA (Vytvoření kódu a připojení) ---
+        // --- LOBBY LOGIC ---
         let currentSelectedGameHtml = "";
         let activeRoomUnsubscribe = null;
+        let activeRoomId = "";
+        let isCurrentUserHost = false;
 
-        function generateRoomCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < 5; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return result;
-        }
-
-        function openLobby(title, html, gameId) {
-            if (!currentUserUid) {
-                alert("Pro hraní multiplayeru se musíš přihlásit!");
-                return authModal.style.display = 'flex';
-            }
+        function openLobby(title, html) {
+            if (!currentUserUid) return authModal.style.display = 'flex';
             currentSelectedGameHtml = html;
             document.getElementById('lobbyGameTitle').innerText = title;
             document.getElementById('lobbyActions').classList.remove('hidden');
@@ -275,89 +192,84 @@
             lobbyModal.style.display = 'flex';
         }
 
-        document.getElementById('closeLobbyModal').onclick = () => {
-            lobbyModal.style.display = 'none';
-            if(activeRoomUnsubscribe) activeRoomUnsubscribe(); // Zrušit sledování databáze, pokud odejdeš
-        };
+        document.getElementById('closeLobbyModal').onclick = () => { lobbyModal.style.display = 'none'; if(activeRoomUnsubscribe) activeRoomUnsubscribe(); };
 
-        // Založení nové místnosti (HOST)
         document.getElementById('createRoomBtn').onclick = async () => {
-            const roomCode = generateRoomCode();
+            const roomCode = Array.from({length: 5}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]).join('');
+            activeRoomId = roomCode;
+            isCurrentUserHost = true;
+            
             document.getElementById('displayRoomCode').innerText = roomCode;
             document.getElementById('lobbyActions').classList.add('hidden');
             document.getElementById('lobbyWaiting').classList.remove('hidden');
 
             const roomRef = doc(db, "rooms", roomCode);
             await setDoc(roomRef, {
-                hostId: currentUserUid,
-                guestId: null,
-                status: "waiting", // čeká na připojení
-                createdAt: new Date()
+                hostId: currentUserUid, guestId: null, status: "waiting",
+                board: Array(9).fill(null), turn: 'X', winner: null, createdAt: new Date()
             });
 
-            // Posluchač: Sleduje, jestli se někdo připojil
             activeRoomUnsubscribe = onSnapshot(roomRef, (docSnap) => {
-                const roomData = docSnap.data();
-                if (roomData && roomData.status === "playing") {
-                    // Druhý hráč se připojil! Spouštíme hru.
-                    launchGame();
-                }
+                if (docSnap.data()?.status === "playing") launchGame();
             });
         };
 
-        // Připojení k existující místnosti (GUEST)
         document.getElementById('joinRoomBtn').onclick = async () => {
             const inputCode = document.getElementById('roomCodeInput').value.toUpperCase();
-            if (inputCode.length !== 5) return alert("Kód musí mít přesně 5 znaků!");
+            if (inputCode.length !== 5) return alert("Kód musí mít 5 znaků!");
 
             const roomRef = doc(db, "rooms", inputCode);
             const docSnap = await getDoc(roomRef);
 
             if (docSnap.exists() && docSnap.data().status === "waiting") {
-                // Připojení proběhlo úspěšně, změníme stav v databázi, což automaticky spustí hru i Hostovi
-                await updateDoc(roomRef, {
-                    guestId: currentUserUid,
-                    status: "playing"
-                });
+                activeRoomId = inputCode;
+                isCurrentUserHost = false;
+                await updateDoc(roomRef, { guestId: currentUserUid, status: "playing" });
                 launchGame();
-            } else {
-                alert("Místnost nenalezena nebo už se v ní hraje.");
-            }
+            } else alert("Místnost neexistuje nebo se v ní hraje.");
         };
 
-        // Společná funkce pro spuštění hry v novém okně
         function launchGame() {
             lobbyModal.style.display = 'none';
-            if(activeRoomUnsubscribe) activeRoomUnsubscribe(); // Už nepotřebujeme sledovat lobby
+            if(activeRoomUnsubscribe) activeRoomUnsubscribe(); 
             
             const newWindow = window.open();
-            newWindow.document.write(currentSelectedGameHtml);
+            const configInjection = `<script>window.ROOM_ID="${activeRoomId}"; window.IS_HOST=${isCurrentUserHost};<\/script>`;
+            newWindow.document.write(configInjection + currentSelectedGameHtml);
             newWindow.document.close();
         }
 
-        // --- Save Game to Database (Admin) ---
+        // --- Save Game to Database ---
         document.getElementById('saveGameBtn').onclick = async () => {
             const title = document.getElementById('gameTitle').value;
-            let emoji = document.getElementById('gameEmoji').value;
+            const emoji = document.getElementById('gameEmoji').value || '🎮';
             const htmlContent = document.getElementById('gameHtml').value;
+            const isMobile = document.getElementById('gameIsMobile').checked; // Načteme stav checkboxu
 
             if (!title || !htmlContent) return alert('Vyplň název a kód hry!');
-            if (!emoji) emoji = '🎮';
 
-            try {
-                await addDoc(collection(db, "games"), { title, emoji, html: htmlContent, createdAt: new Date() });
-                addGameModal.style.display = 'none';
-                document.getElementById('gameTitle').value = ''; document.getElementById('gameEmoji').value = ''; document.getElementById('gameHtml').value = '';
-            } catch(e) { alert("Chyba při ukládání: " + e.message); }
+            try { 
+                await addDoc(collection(db, "games"), { 
+                    title: title, 
+                    emoji: emoji, 
+                    html: htmlContent, 
+                    isMobile: isMobile, // Uložíme boolean do databáze
+                    createdAt: new Date() 
+                }); 
+                
+                addGameModal.style.display = 'none'; 
+                
+                // Vyčištění polí
+                document.getElementById('gameTitle').value = ''; 
+                document.getElementById('gameEmoji').value = ''; 
+                document.getElementById('gameHtml').value = ''; 
+                document.getElementById('gameIsMobile').checked = false; // Reset checkboxu
+            } catch(e) { alert(e.message); }
         };
 
-        // Theme Toggle
+        // Theme
         document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
-        document.getElementById('themeToggle').onclick = () => {
-            let newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            document.body.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        };
+        document.getElementById('themeToggle').onclick = () => { let nt = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; document.body.setAttribute('data-theme', nt); localStorage.setItem('theme', nt); };
     </script>
 </body>
 </html>
