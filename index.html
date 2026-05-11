@@ -6,62 +6,53 @@
     <title>Online Game Hub</title>
     <style>
         /* --- CSS: Styling & Theme Variables --- */
-        :root { --bg-color: #f4f4f9; --text-color: #333333; --card-bg: #ffffff; --card-hover: #eeeeee; --primary-color: #6200ea; --btn-text: #ffffff; --border-color: #cccccc; }
-        [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-hover: #2c2c2c; --primary-color: #bb86fc; --btn-text: #121212; --border-color: #444444; }
+        :root { --bg-color: #f4f4f9; --text-color: #333333; --card-bg: #ffffff; --card-hover: #eeeeee; --primary-color: #6200ea; --btn-text: #ffffff; --border-color: #cccccc; --dropdown-bg: #ffffff; }
+        [data-theme="dark"] { --bg-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-hover: #2c2c2c; --primary-color: #bb86fc; --btn-text: #121212; --border-color: #444444; --dropdown-bg: #252525; }
         
-        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background-color: var(--card-bg); box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: background-color 0.3s; }
-        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; overflow-x: hidden; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background-color: var(--card-bg); box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; z-index: 100; }
+        h1 { margin: 0; font-size: 1.4rem; letter-spacing: 1px; cursor: default; }
         
-        .controls { display: flex; align-items: center; gap: 15px; }
-        .user-info { font-weight: bold; color: var(--primary-color); }
-        .admin-badge { background: #ff0266; color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 4px; vertical-align: top; margin-left: 5px; }
+        .controls { display: flex; align-items: center; gap: 15px; position: relative; }
+        .user-info { font-weight: bold; color: var(--primary-color); font-size: 0.95rem; }
+        .admin-badge { background: #ff0266; color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
         
-        button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.2s ease; }
-        button:hover { opacity: 0.85; transform: translateY(-2px); }
-        button:active { transform: translateY(0); }
-        .google-btn { background-color: #db4437; color: white; width: 100%; margin-top: 10px; }
-        .danger-btn { background-color: #cf6679; color: #000; width: 100%; margin-top: 15px; }
-        .icon-btn { padding: 10px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+        button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s ease; }
+        button:hover { opacity: 0.85; transform: translateY(-1px); }
+        .icon-btn { padding: 8px; font-size: 1.3rem; background: transparent; color: var(--text-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .icon-btn:hover { background: var(--card-hover); transform: rotate(30deg); }
         
-        main { padding: 40px; }
+        /* --- Dropdown Menu --- */
+        .dropdown { position: absolute; top: 55px; right: 0; background-color: var(--dropdown-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); width: 180px; display: none; flex-direction: column; overflow: hidden; animation: slideDown 0.2s ease-out; }
+        .dropdown.show { display: flex; }
+        .dropdown-item { padding: 12px 15px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background 0.2s; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
+        .dropdown-item:last-child { border-bottom: none; color: #cf6679; }
+        .dropdown-item:hover { background: var(--card-hover); }
+        
+        main { padding: 30px 40px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; }
         
-        .game-card { position: relative; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; justify-content: center; min-height: 150px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .game-card:hover { transform: translateY(-8px); box-shadow: 0 12px 20px rgba(0,0,0,0.15); background-color: var(--card-hover); }
-        .game-card .emoji-icon { font-size: 5rem; margin-bottom: 15px; display: block; transition: transform 0.3s ease; }
-        .game-card:hover .emoji-icon { transform: scale(1.1); }
-        .game-card h3 { margin: 0; }
+        .game-card { position: relative; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; justify-content: center; min-height: 160px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .game-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.2); background-color: var(--card-hover); }
+        .game-card .emoji-icon { font-size: 4.5rem; margin-bottom: 15px; display: block; transition: transform 0.3s ease; }
+        .game-card:hover .emoji-icon { transform: scale(1.15) rotate(5deg); }
         
-        .mobile-badge { position: absolute; top: 10px; right: 10px; font-size: 1.2rem; background: var(--bg-color); border-radius: 50%; padding: 5px; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .mobile-badge { position: absolute; top: 12px; right: 12px; font-size: 1.1rem; opacity: 0.7; }
         
-        /* --- Modal & Animations --- */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        /* --- Animations --- */
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         
-        .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; animation: fadeIn 0.2s ease; }
-        .modal-content { background-color: var(--card-bg); padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; transition: color 0.2s; }
-        .close-btn:hover { color: var(--primary-color); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .modal-content { background-color: var(--card-bg); padding: 30px; border-radius: 16px; width: 90%; max-width: 380px; display: flex; flex-direction: column; gap: 15px; position: relative; animation: popIn 0.3s ease-out; }
         
-        input[type="text"], input[type="email"], input[type="password"], textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-color); color: var(--text-color); box-sizing: border-box; transition: border-color 0.2s; font-family: inherit; }
-        input:focus, textarea:focus { outline: none; border-color: var(--primary-color); }
-        
-        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 5px; cursor: pointer; }
-        .checkbox-group input { width: 20px; height: 20px; cursor: pointer; }
-        .checkbox-group label { cursor: pointer; font-weight: bold; }
-
-        .room-code-display { font-size: 2.5rem; letter-spacing: 5px; color: var(--primary-color); text-align: center; margin: 10px 0; font-family: monospace; font-weight: bold; }
-        .code-input { text-transform: uppercase; font-size: 1.5rem; text-align: center; letter-spacing: 3px; font-family: monospace; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; background-color: var(--bg-color); color: var(--text-color); box-sizing: border-box; font-size: 1rem; }
         .hidden { display: none !important; }
-        .divider { text-align: center; margin: 10px 0; opacity: 0.5; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; }
 
         @media (max-width: 600px) {
-            header { flex-direction: column; padding: 20px; gap: 15px; }
-            .controls { flex-wrap: wrap; justify-content: center; }
+            header { padding: 15px 20px; }
             main { padding: 20px; }
             .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
-            .game-card .emoji-icon { font-size: 4rem; }
         }
     </style>
 </head>
@@ -73,8 +64,14 @@
             <span id="userInfo" class="user-info hidden"></span>
             <button id="loginBtn">Přihlásit se</button>
             <button id="openAddGameModal" class="hidden">+ Přidat hru</button>
-            <button id="openSettingsBtn" class="hidden icon-btn" title="Nastavení">⚙️</button>
-            <button id="themeToggle" class="icon-btn" title="Změnit motiv">🌓</button>
+            
+            <button id="settingsToggleBtn" class="hidden icon-btn">⚙️</button>
+            
+            <div id="settingsDropdown" class="dropdown">
+                <div class="dropdown-item" id="btnChangeNick">👤 Změnit Nick</div>
+                <div class="dropdown-item" id="btnToggleTheme">🌓 Změnit Motiv</div>
+                <div class="dropdown-item" id="btnLogout">🚪 Odhlásit se</div>
+            </div>
         </div>
     </header>
 
@@ -82,67 +79,13 @@
         <div class="grid" id="gameGrid"></div>
     </main>
 
-    <div id="authModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeAuthModal">&times;</span>
-            <h2 id="authTitle">Přihlášení</h2>
-            
-            <input type="text" id="nickInput" class="hidden" placeholder="Tvoje přezdívka (Nick)">
-            <input type="email" id="emailInput" placeholder="E-mail" required>
-            <input type="password" id="passwordInput" placeholder="Heslo" required>
-            
-            <button id="submitAuthBtn">Přihlásit</button>
-            <p style="text-align: center; font-size: 0.9em; cursor: pointer; color: var(--primary-color); font-weight: bold;" id="toggleAuthMode">Nemáš účet? Registruj se zde.</p>
-            <div class="divider">NEBO</div>
-            <button id="googleLoginBtn" class="google-btn">Přihlásit přes Google</button>
-        </div>
-    </div>
+    <div id="authModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('authModal')">&times;</span><h2 id="authTitle">Přihlášení</h2><input type="text" id="nickInput" class="hidden" placeholder="Tvoje přezdívka (Nick)"><input type="email" id="emailInput" placeholder="E-mail" required><input type="password" id="passwordInput" placeholder="Heslo" required><button id="submitAuthBtn">Přihlásit</button><p style="text-align: center; font-size: 0.9em; cursor: pointer; color: var(--primary-color); font-weight: bold;" id="toggleAuthMode">Nemáš účet? Registruj se zde.</p></div></div>
     
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeSettingsModal">&times;</span>
-            <h2>Nastavení účtu</h2>
-            <label style="font-weight: bold; font-size: 0.9em;">Změnit přezdívku (Nick):</label>
-            <input type="text" id="settingsNickInput" placeholder="Zadej nový Nick">
-            <button id="updateNickBtn">Uložit změny</button>
-            
-            <div class="divider" style="margin-top: 20px;">ÚČET</div>
-            <button id="logoutBtn" class="danger-btn">Odhlásit se</button>
-        </div>
-    </div>
+    <div id="nickModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('nickModal')">&times;</span><h2>Změna přezdívky</h2><p style="font-size: 0.9em; opacity: 0.7;">Zadej svůj nový herní Nick:</p><input type="text" id="settingsNickInput" placeholder="Nový Nick"><button id="updateNickBtn">Uložit přezdívku</button></div></div>
     
-    <div id="addGameModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeAddGameModal">&times;</span>
-            <h2>Nová hra (Admin)</h2>
-            <input type="text" id="gameTitle" placeholder="Název hry" required>
-            <input type="text" id="gameEmoji" placeholder="Emoji ikona (např. 👾)" required>
-            <div class="checkbox-group">
-                <input type="checkbox" id="gameIsMobile">
-                <label for="gameIsMobile">Hratelné i na mobilu 📱</label>
-            </div>
-            <textarea id="gameHtml" rows="4" placeholder="Sem vlož celý <html> kód hry..." required></textarea>
-            <button id="saveGameBtn">Uložit do databáze</button>
-        </div>
-    </div>
+    <div id="addGameModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('addGameModal')">&times;</span><h2>Nová hra (Admin)</h2><input type="text" id="gameTitle" placeholder="Název hry" required><input type="text" id="gameEmoji" placeholder="Emoji ikona" required><div style="display:flex; gap:10px; align-items:center;"><input type="checkbox" id="gameIsMobile" style="width:20px;"><label for="gameIsMobile">Hratelné na mobilu 📱</label></div><textarea id="gameHtml" rows="4" placeholder="HTML kód hry..." required></textarea><button id="saveGameBtn">Uložit hru</button></div></div>
 
-    <div id="lobbyModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeLobbyModal">&times;</span>
-            <h2 id="lobbyGameTitle">Multiplayer Místnost</h2>
-            <div id="lobbyActions">
-                <button id="createRoomBtn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Vytvořit kód místnosti</button>
-                <div class="divider">NEBO</div>
-                <input type="text" id="roomCodeInput" class="code-input" placeholder="Zadej kód (5 znaků)" maxlength="5">
-                <button id="joinRoomBtn" style="width: 100%; background-color: #03dac6; color: #000;">Připojit se ke hře</button>
-            </div>
-            <div id="lobbyWaiting" class="hidden">
-                <p style="text-align: center; margin-bottom: 0;">Tvůj kód pro připojení:</p>
-                <div class="room-code-display" id="displayRoomCode">XXXXX</div>
-                <p style="text-align: center; font-size: 0.9em; opacity: 0.8;">Čekám, až druhý hráč zadá kód...</p>
-            </div>
-        </div>
-    </div>
+    <div id="lobbyModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal('lobbyModal')">&times;</span><h2 id="lobbyGameTitle">Lobby</h2><div id="lobbyActions"><button id="createRoomBtn" style="width: 100%;">Vytvořit místnost</button><div style="text-align:center; margin:10px 0; opacity:0.5;">NEBO</div><input type="text" id="roomCodeInput" class="code-input" placeholder="Kód (5 znaků)" maxlength="5"><button id="joinRoomBtn" style="width: 100%; margin-top:10px; background:#03dac6; color:#000;">Připojit se</button></div><div id="lobbyWaiting" class="hidden"><p style="text-align:center;">Kód místnosti:</p><div class="room-code-display" id="displayRoomCode">XXXXX</div><p style="text-align:center; font-size:0.8em;">Čekám na soupeře...</p></div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
@@ -164,200 +107,134 @@
         const googleProvider = new GoogleAuthProvider();
 
         const ADMIN_EMAIL = "zitkatomik007@gmail.com"; 
-        let currentUserUid = null;
-        
-        // Device Detection (Regex check for mobile platforms)
-        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        // UI Variables
-        const [loginBtn, openAddGameModalBtn, openSettingsBtn, userInfo, authModal, addGameModal, lobbyModal, settingsModal] = 
-            ['loginBtn','openAddGameModal','openSettingsBtn','userInfo','authModal','addGameModal','lobbyModal','settingsModal'].map(id => document.getElementById(id));
-        
-        const nickInput = document.getElementById('nickInput');
-        const settingsNickInput = document.getElementById('settingsNickInput');
+        // Global Modal Closer
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
 
-        // Modals Management
-        loginBtn.onclick = () => authModal.style.display = 'flex';
-        openSettingsBtn.onclick = () => {
-            settingsNickInput.value = auth.currentUser?.displayName || '';
-            settingsModal.style.display = 'flex';
+        // UI Refs
+        const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+        const settingsDropdown = document.getElementById('settingsDropdown');
+        const loginBtn = document.getElementById('loginBtn');
+        const userInfo = document.getElementById('userInfo');
+
+        // Dropdown Toggle
+        settingsToggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            settingsDropdown.classList.toggle('show');
         };
+        window.onclick = () => settingsDropdown.classList.remove('show');
+
+        // Auth Logic
+        loginBtn.onclick = () => document.getElementById('authModal').style.display = 'flex';
         
-        document.getElementById('closeAuthModal').onclick = () => authModal.style.display = 'none';
-        document.getElementById('closeAddGameModal').onclick = () => addGameModal.style.display = 'none';
-        document.getElementById('closeSettingsModal').onclick = () => settingsModal.style.display = 'none';
-        
-        // Auth Mode Toggle (Login vs Register)
         let isLoginMode = true;
-        document.getElementById('toggleAuthMode').onclick = (e) => { 
-            isLoginMode = !isLoginMode; 
-            document.getElementById('authTitle').innerText = isLoginMode ? 'Přihlášení' : 'Registrace'; 
-            document.getElementById('submitAuthBtn').innerText = isLoginMode ? 'Přihlásit' : 'Vytvořit účet'; 
-            e.target.innerText = isLoginMode ? 'Nemáš účet? Registruj se zde.' : 'Máš účet? Přihlas se zde.'; 
-            nickInput.classList.toggle('hidden', isLoginMode); // Show/Hide Nick input
+        document.getElementById('toggleAuthMode').onclick = (e) => {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').innerText = isLoginMode ? 'Přihlášení' : 'Registrace';
+            document.getElementById('nickInput').classList.toggle('hidden', isLoginMode);
+            e.target.innerText = isLoginMode ? 'Nemáš účet? Registruj se zde.' : 'Máš účet? Přihlas se zde.';
         };
 
-        // Submit Auth (Register/Login)
-        document.getElementById('submitAuthBtn').onclick = async () => { 
+        document.getElementById('submitAuthBtn').onclick = async () => {
             const email = document.getElementById('emailInput').value;
-            const password = document.getElementById('passwordInput').value;
-            const nick = nickInput.value.trim();
-
-            try { 
-                if (isLoginMode) {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } else {
-                    if(!nick) return alert("Prosím, zadej přezdívku!");
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    // Update profile immediately after creation
-                    await updateProfile(userCredential.user, { displayName: nick });
-                }
-                authModal.style.display = 'none'; 
-            } catch (e) { alert("Chyba: " + e.message); } 
-        };
-
-        document.getElementById('googleLoginBtn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); authModal.style.display = 'none'; } catch (e) { alert(e.message); } };
-        
-        // Logout
-        document.getElementById('logoutBtn').onclick = () => { signOut(auth); settingsModal.style.display = 'none'; };
-
-        // Update Nickname from Settings
-        document.getElementById('updateNickBtn').onclick = async () => {
-            const newNick = settingsNickInput.value.trim();
-            if(!newNick) return alert("Nick nemůže být prázdný!");
+            const pass = document.getElementById('passwordInput').value;
+            const nick = document.getElementById('nickInput').value;
             try {
-                await updateProfile(auth.currentUser, { displayName: newNick });
-                updateHeaderUI(auth.currentUser); // Refresh UI
-                settingsModal.style.display = 'none';
-            } catch (e) { alert("Chyba při ukládání: " + e.message); }
+                if (isLoginMode) await signInWithEmailAndPassword(auth, email, pass);
+                else {
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    await updateProfile(res.user, { displayName: nick });
+                }
+                closeModal('authModal');
+            } catch (e) { alert(e.message); }
         };
 
-        // Function to update header UI
-        function updateHeaderUI(user) {
-            let displayName = user.displayName || user.email.split('@')[0];
-            let isAdmin = (user.email === ADMIN_EMAIL);
-            userInfo.innerHTML = `${displayName} ${isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}`;
-        }
+        document.getElementById('googleLoginBtn').onclick = async () => {
+            try { await signInWithPopup(auth, googleProvider); closeModal('authModal'); } catch (e) { alert(e.message); }
+        };
 
+        // Settings Actions
+        document.getElementById('btnChangeNick').onclick = () => {
+            document.getElementById('settingsNickInput').value = auth.currentUser.displayName || "";
+            document.getElementById('nickModal').style.display = 'flex';
+        };
+        document.getElementById('updateNickBtn').onclick = async () => {
+            await updateProfile(auth.currentUser, { displayName: document.getElementById('settingsNickInput').value });
+            userInfo.innerText = auth.currentUser.displayName;
+            closeModal('nickModal');
+        };
+        document.getElementById('btnToggleTheme').onclick = () => {
+            let nt = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', nt);
+            localStorage.setItem('theme', nt);
+        };
+        document.getElementById('btnLogout').onclick = () => signOut(auth);
+
+        // State Change
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                currentUserUid = user.uid;
-                updateHeaderUI(user);
-                userInfo.classList.remove('hidden'); 
-                openSettingsBtn.classList.remove('hidden'); 
-                loginBtn.classList.add('hidden');
-                if(user.email === ADMIN_EMAIL) openAddGameModalBtn.classList.remove('hidden');
+                userInfo.innerHTML = `${user.displayName || user.email.split('@')[0]} ${user.email === ADMIN_EMAIL ? '<span class="admin-badge">ADMIN</span>' : ''}`;
+                userInfo.classList.remove('hidden'); loginBtn.classList.add('hidden'); settingsToggleBtn.classList.remove('hidden');
+                if(user.email === ADMIN_EMAIL) document.getElementById('openAddGameModal').classList.remove('hidden');
             } else {
-                currentUserUid = null; 
-                userInfo.classList.add('hidden'); 
-                openSettingsBtn.classList.add('hidden'); 
-                openAddGameModalBtn.classList.add('hidden'); 
-                loginBtn.classList.remove('hidden');
+                userInfo.classList.add('hidden'); loginBtn.classList.remove('hidden'); settingsToggleBtn.classList.add('hidden'); document.getElementById('openAddGameModal').classList.add('hidden');
             }
         });
 
-        // Fetch Games with Mobile Filtering
-        openAddGameModalBtn.onclick = () => addGameModal.style.display = 'flex';
+        // Load Games
+        document.getElementById('openAddGameModal').onclick = () => document.getElementById('addGameModal').style.display = 'flex';
         onSnapshot(query(collection(db, "games")), (snap) => {
-            const grid = document.getElementById('gameGrid');
-            grid.innerHTML = ''; 
+            const grid = document.getElementById('gameGrid'); grid.innerHTML = '';
             snap.forEach((docSnap) => {
                 const game = docSnap.data();
-                
-                // SKIPPING LOGIC: If user is on a phone and game is NOT mobile friendly, skip rendering.
-                if (isMobileDevice && !game.isMobile) return; 
-
+                if (isMobileDevice && !game.isMobile) return;
                 const card = document.createElement('div'); card.className = 'game-card';
-                const mobileBadge = game.isMobile ? `<div class="mobile-badge" title="Hratelné na mobilu">📱</div>` : '';
-                
-                card.innerHTML = `${mobileBadge}<span class="emoji-icon">${game.emoji || '🎮'}</span><h3>${game.title}</h3>`;
+                card.innerHTML = `${game.isMobile ? '<div class="mobile-badge">📱</div>' : ''}<span class="emoji-icon">${game.emoji}</span><h3>${game.title}</h3>`;
                 card.onclick = () => openLobby(game.title, game.html);
                 grid.appendChild(card);
             });
         });
 
-        // --- LOBBY LOGIC ---
-        let currentSelectedGameHtml = "";
-        let activeRoomUnsubscribe = null;
-        let activeRoomId = "";
-        let isCurrentUserHost = false;
-
-        function openLobby(title, html) {
-            if (!currentUserUid) return authModal.style.display = 'flex';
-            currentSelectedGameHtml = html;
-            document.getElementById('lobbyGameTitle').innerText = title;
-            document.getElementById('lobbyActions').classList.remove('hidden');
-            document.getElementById('lobbyWaiting').classList.add('hidden');
-            document.getElementById('roomCodeInput').value = '';
-            lobbyModal.style.display = 'flex';
+        // Lobby Logic
+        let curHtml = "", curId = "", isHost = false, unsub = null;
+        function openLobby(t, h) {
+            if (!auth.currentUser) return document.getElementById('authModal').style.display = 'flex';
+            curHtml = h; document.getElementById('lobbyGameTitle').innerText = t;
+            document.getElementById('lobbyActions').classList.remove('hidden'); document.getElementById('lobbyWaiting').classList.add('hidden');
+            document.getElementById('lobbyModal').style.display = 'flex';
         }
-
-        document.getElementById('closeLobbyModal').onclick = () => { lobbyModal.style.display = 'none'; if(activeRoomUnsubscribe) activeRoomUnsubscribe(); };
-
         document.getElementById('createRoomBtn').onclick = async () => {
-            const roomCode = Array.from({length: 5}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]).join('');
-            activeRoomId = roomCode;
-            isCurrentUserHost = true;
-            
-            document.getElementById('displayRoomCode').innerText = roomCode;
-            document.getElementById('lobbyActions').classList.add('hidden');
-            document.getElementById('lobbyWaiting').classList.remove('hidden');
-
-            const roomRef = doc(db, "rooms", roomCode);
-            await setDoc(roomRef, {
-                hostId: currentUserUid, guestId: null, status: "waiting",
-                board: Array(9).fill(null), turn: 'X', winner: null, createdAt: new Date()
-            });
-
-            activeRoomUnsubscribe = onSnapshot(roomRef, (docSnap) => {
-                if (docSnap.data()?.status === "playing") launchGame();
-            });
+            const code = Array.from({length: 5}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]).join('');
+            curId = code; isHost = true;
+            document.getElementById('displayRoomCode').innerText = code;
+            document.getElementById('lobbyActions').classList.add('hidden'); document.getElementById('lobbyWaiting').classList.remove('hidden');
+            const ref = doc(db, "rooms", code);
+            await setDoc(ref, { hostId: auth.currentUser.uid, status: "waiting", board: Array(9).fill(null), turn: 'X' });
+            unsub = onSnapshot(ref, (s) => { if (s.data()?.status === "playing") launch(); });
         };
-
         document.getElementById('joinRoomBtn').onclick = async () => {
-            const inputCode = document.getElementById('roomCodeInput').value.toUpperCase();
-            if (inputCode.length !== 5) return alert("Kód musí mít 5 znaků!");
-
-            const roomRef = doc(db, "rooms", inputCode);
-            const docSnap = await getDoc(roomRef);
-
-            if (docSnap.exists() && docSnap.data().status === "waiting") {
-                activeRoomId = inputCode;
-                isCurrentUserHost = false;
-                await updateDoc(roomRef, { guestId: currentUserUid, status: "playing" });
-                launchGame();
-            } else alert("Místnost neexistuje nebo se v ní hraje.");
+            const code = document.getElementById('roomCodeInput').value.toUpperCase();
+            const ref = doc(db, "rooms", code); const s = await getDoc(ref);
+            if (s.exists() && s.data().status === "waiting") {
+                curId = code; isHost = false; await updateDoc(ref, { guestId: auth.currentUser.uid, status: "playing" }); launch();
+            } else alert("Neexistuje.");
         };
-
-        function launchGame() {
-            lobbyModal.style.display = 'none';
-            if(activeRoomUnsubscribe) activeRoomUnsubscribe(); 
-            
-            const newWindow = window.open();
-            const configInjection = `<script>window.ROOM_ID="${activeRoomId}"; window.IS_HOST=${isCurrentUserHost};<\/script>`;
-            newWindow.document.write(configInjection + currentSelectedGameHtml);
-            newWindow.document.close();
+        function launch() {
+            closeModal('lobbyModal'); if(unsub) unsub();
+            const win = window.open();
+            win.document.write(`<script>window.ROOM_ID="${curId}"; window.IS_HOST=${isHost};<\/script>` + curHtml);
+            win.document.close();
         }
 
-        // --- Save Game to Database ---
+        // Admin Save
         document.getElementById('saveGameBtn').onclick = async () => {
-            const title = document.getElementById('gameTitle').value;
-            const emoji = document.getElementById('gameEmoji').value || '🎮';
-            const htmlContent = document.getElementById('gameHtml').value;
-            const isMobile = document.getElementById('gameIsMobile').checked; 
-
-            if (!title || !htmlContent) return alert('Vyplň název a kód hry!');
-
-            try { 
-                await addDoc(collection(db, "games"), { title, emoji, html: htmlContent, isMobile, createdAt: new Date() }); 
-                addGameModal.style.display = 'none'; 
-                document.getElementById('gameTitle').value = ''; document.getElementById('gameEmoji').value = ''; document.getElementById('gameHtml').value = ''; document.getElementById('gameIsMobile').checked = false; 
-            } catch(e) { alert(e.message); }
+            await addDoc(collection(db, "games"), { title: document.getElementById('gameTitle').value, emoji: document.getElementById('gameEmoji').value, html: document.getElementById('gameHtml').value, isMobile: document.getElementById('gameIsMobile').checked, createdAt: new Date() });
+            closeModal('addGameModal');
         };
 
-        // Theme Toggle
+        // Init Theme
         document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
-        document.getElementById('themeToggle').onclick = () => { let nt = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; document.body.setAttribute('data-theme', nt); localStorage.setItem('theme', nt); };
     </script>
 </body>
 </html>
