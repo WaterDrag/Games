@@ -29,7 +29,7 @@
         .dropdown-item:hover { background: var(--card-hover); }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; padding: 30px 40px; align-items: start; height: calc(100vh - 80px); overflow-y: auto; }
-        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 200px; transition: transform 0.3s; position: relative; }
+        .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 180px; transition: transform 0.3s; position: relative; }
         .game-card:hover { transform: translateY(-5px); }
 
         #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 20000; }
@@ -72,11 +72,8 @@
     </div>
 
     <div id="authModal" class="modal"><div class="modal-content"><h2>Přihlášení</h2><input type="email" id="emailInput" placeholder="Email"><input type="password" id="passwordInput" placeholder="Heslo"><button id="submitAuthBtn">Vstoupit</button></div></div>
-    
     <div id="nickModal" class="modal"><div class="modal-content"><h2>Změna Nicku</h2><input type="text" id="newNickInput" placeholder="Nová přezdívka"><button id="saveNickBtn">Uložit</button></div></div>
-
     <div id="gameModal" class="modal"><div class="modal-content"><h2 id="gameModalTitle">Nová hra</h2><input type="hidden" id="editGameId"><input type="text" id="gameTitle" placeholder="Název hry"><input type="text" id="gameEmoji" placeholder="Emoji"><div style="display:flex; gap:10px; align-items:center;"><input type="checkbox" id="gameIsMobile"><label for="gameIsMobile">Pro mobil 📱</label></div><textarea id="gameHtml" rows="10" placeholder="HTML kód..."></textarea><button id="saveGameBtn">Uložit hru</button></div></div>
-
     <div id="lobbyModal" class="modal"><div class="modal-content"><h2 id="lobbyTitle">Lobby</h2><button id="createRoomBtn">Vytvořit místnost</button><div style="margin: 10px 0;"></div><input type="text" id="roomCodeInput" placeholder="Kód místnosti"><button id="joinRoomBtn" style="background:#03dac6">Připojit se</button><div id="waitingArea" class="hidden"><p>Kód: <b id="displayCode" style="font-size:2rem"></b></p></div></div></div>
 
     <script type="module">
@@ -89,6 +86,11 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        let isGameRunning = false;
+        let isAdminMode = false;
+        let allGames = [];
+        let currentRoomId = "";
+
         // UI FUNKCE
         window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; closeDropdown(); };
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
@@ -100,13 +102,13 @@
             if (event.target.classList.contains('modal')) event.target.style.display = 'none';
         }
 
-        window.closeGame = () => { document.getElementById('gameOverlay').style.display = 'none'; document.getElementById('gameFrame').srcdoc = ""; };
+        window.closeGame = () => { 
+            isGameRunning = false;
+            document.getElementById('gameOverlay').style.display = 'none'; 
+            document.getElementById('gameFrame').srcdoc = ""; 
+        };
 
-        let isAdminMode = false;
-        let allGames = [];
-        let currentRoomId = "";
-
-        // AUTH
+        // AUTH & USER
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('userInfo').innerText = user.displayName || user.email;
@@ -122,13 +124,11 @@
         };
         document.getElementById('btnLogout').onclick = () => { signOut(auth); location.reload(); };
 
-        // NICK & THEME
         document.getElementById('btnChangeNick').onclick = () => { document.getElementById('newNickInput').value = auth.currentUser.displayName || ""; openModal('nickModal'); };
         document.getElementById('saveNickBtn').onclick = async () => { const nick = document.getElementById('newNickInput').value.trim(); if(nick) { await updateProfile(auth.currentUser, { displayName: nick }); location.reload(); } };
         document.getElementById('btnToggleTheme').onclick = () => { const body = document.body; const newTheme = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; body.setAttribute('data-theme', newTheme); localStorage.setItem('theme', newTheme); closeDropdown(); };
         document.body.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
 
-        // ADMIN LOGIC
         document.getElementById('btnAdminMode').onclick = () => {
             isAdminMode = !isAdminMode;
             document.getElementById('btnAdminMode').innerText = isAdminMode ? '🛠️ Admin mód: ON' : '🛠️ Admin mód: OFF';
@@ -138,23 +138,17 @@
         };
 
         window.prepareAddGame = () => {
-            document.getElementById('editGameId').value = "";
-            document.getElementById('gameTitle').value = "";
-            document.getElementById('gameEmoji').value = "";
-            document.getElementById('gameHtml').value = "";
-            document.getElementById('gameIsMobile').checked = false;
-            document.getElementById('gameModalTitle').innerText = "Nová hra";
+            document.getElementById('editGameId').value = ""; document.getElementById('gameTitle').value = "";
+            document.getElementById('gameEmoji').value = ""; document.getElementById('gameHtml').value = "";
+            document.getElementById('gameIsMobile').checked = false; document.getElementById('gameModalTitle').innerText = "Nová hra";
             openModal('gameModal');
         };
 
         window.editGame = (id) => {
             const g = allGames.find(x => x.id === id);
-            document.getElementById('editGameId').value = g.id;
-            document.getElementById('gameTitle').value = g.title;
-            document.getElementById('gameEmoji').value = g.emoji;
-            document.getElementById('gameHtml').value = g.html;
-            document.getElementById('gameIsMobile').checked = g.isMobile || false;
-            document.getElementById('gameModalTitle').innerText = "Upravit hru";
+            document.getElementById('editGameId').value = g.id; document.getElementById('gameTitle').value = g.title;
+            document.getElementById('gameEmoji').value = g.emoji; document.getElementById('gameHtml').value = g.html;
+            document.getElementById('gameIsMobile').checked = g.isMobile || false; document.getElementById('gameModalTitle').innerText = "Upravit hru";
             openModal('gameModal');
         };
 
@@ -162,24 +156,14 @@
 
         document.getElementById('saveGameBtn').onclick = async () => {
             const id = document.getElementById('editGameId').value;
-            const data = {
-                title: document.getElementById('gameTitle').value,
-                emoji: document.getElementById('gameEmoji').value,
-                html: document.getElementById('gameHtml').value,
-                isMobile: document.getElementById('gameIsMobile').checked,
-                createdAt: new Date()
-            };
-            try {
-                if(id) await updateDoc(doc(db, "games", id), data);
-                else await addDoc(collection(db, "games"), data);
-                closeModal('gameModal');
-            } catch(e) { alert(e.message); }
+            const data = { title: document.getElementById('gameTitle').value, emoji: document.getElementById('gameEmoji').value, html: document.getElementById('gameHtml').value, isMobile: document.getElementById('gameIsMobile').checked, createdAt: new Date() };
+            try { if(id) await updateDoc(doc(db, "games", id), data); else await addDoc(collection(db, "games"), data); closeModal('gameModal'); } catch(e) { alert(e.message); }
         };
 
-        // GAMES RENDER
+        // GAMES SNAPSHOT
         onSnapshot(query(collection(db, "games"), orderBy("createdAt", "desc")), (snap) => {
             allGames = []; snap.forEach(d => allGames.push({ id: d.id, ...d.data() }));
-            render();
+            if (!isGameRunning) render();
         });
 
         function render() {
@@ -187,14 +171,8 @@
             allGames.forEach(g => {
                 const card = document.createElement('div'); card.className = 'game-card';
                 let html = `<div onclick="openLobby('${g.id}')" style="cursor:pointer"><span style="font-size:4rem">${g.emoji}</span><h3>${g.title}</h3></div>`;
-                if(isAdminMode) {
-                    html += `<div class="admin-btn-container">
-                        <button class="edit-btn" onclick="editGame('${g.id}')">Edit</button>
-                        <button class="delete-btn" onclick="deleteGame('${g.id}')">Smazat</button>
-                    </div>`;
-                }
-                card.innerHTML = html;
-                grid.appendChild(card);
+                if(isAdminMode) html += `<div class="admin-btn-container"><button class="edit-btn" onclick="editGame('${g.id}')">Edit</button><button class="delete-btn" onclick="deleteGame('${g.id}')">Smazat</button></div>`;
+                card.innerHTML = html; grid.appendChild(card);
             });
         }
 
@@ -209,8 +187,7 @@
 
         document.getElementById('createRoomBtn').onclick = async () => {
             const code = Math.random().toString(36).substring(2, 7).toUpperCase();
-            currentRoomId = code;
-            document.getElementById('displayCode').innerText = code;
+            currentRoomId = code; document.getElementById('displayCode').innerText = code;
             document.getElementById('waitingArea').classList.remove('hidden');
             const ref = doc(db, "rooms", code);
             await setDoc(ref, { hostId: auth.currentUser.uid, status: "waiting", board: Array(9).fill(null), turn: 'X' });
@@ -219,19 +196,22 @@
 
         document.getElementById('joinRoomBtn').onclick = async () => {
             const code = document.getElementById('roomCodeInput').value.toUpperCase();
-            const ref = doc(db, "rooms", code);
-            const s = await getDoc(ref);
+            const ref = doc(db, "rooms", code); const s = await getDoc(ref);
             if (s.exists() && s.data().status === "waiting") {
-                currentRoomId = code;
-                await updateDoc(ref, { guestId: auth.currentUser.uid, status: "playing" });
-                launch(false);
+                currentRoomId = code; await updateDoc(ref, { guestId: auth.currentUser.uid, status: "playing" }); launch(false);
             } else alert("Místnost nenalezena");
         };
 
         function launch(isHost) {
+            isGameRunning = true;
             closeModal('lobbyModal');
-            document.getElementById('gameOverlay').style.display = 'block';
-            document.getElementById('gameFrame').srcdoc = `<script>window.ROOM_ID="${currentRoomId}"; window.IS_HOST=${isHost};<\/script>${window.selectedGameHtml}`;
+            const overlay = document.getElementById('gameOverlay');
+            const frame = document.getElementById('gameFrame');
+            frame.srcdoc = ""; 
+            setTimeout(() => {
+                frame.srcdoc = `<script>window.ROOM_ID="${currentRoomId}"; window.IS_HOST=${isHost};<\/script>${window.selectedGameHtml}`;
+                overlay.style.display = 'block';
+            }, 50);
         }
     </script>
 </body>
