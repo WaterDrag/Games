@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Můj Game Hub</title>
+    <title>Online Game Hub</title>
     <style>
-        /* --- CSS: Stylování a Proměnné pro světlý/tmavý režim --- */
+        /* --- CSS: Stylování a Proměnné --- */
         :root {
             --bg-color: #f4f4f9;
             --text-color: #333333;
@@ -42,24 +42,34 @@
             padding: 20px 40px;
             background-color: var(--card-bg);
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: background-color 0.3s;
         }
 
-        h1 { margin: 0; }
+        h1 { margin: 0; font-size: 1.5rem; }
 
-        .controls button {
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        button {
             background-color: var(--primary-color);
             color: var(--btn-text);
             border: none;
             padding: 10px 20px;
-            margin-left: 10px;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
             transition: opacity 0.2s;
         }
 
-        .controls button:hover { opacity: 0.8; }
+        button:hover { opacity: 0.8; }
+        button:disabled { background-color: gray; cursor: not-allowed; }
 
         main { padding: 40px; }
 
@@ -69,7 +79,6 @@
             gap: 25px;
         }
 
-        /* --- Karty her --- */
         .game-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -77,32 +86,10 @@
             padding: 20px;
             text-align: center;
             cursor: pointer;
-            transition: transform 0.2s, background-color 0.3s;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
 
-        .game-card:hover {
-            transform: translateY(-5px);
-            background-color: var(--card-hover);
-        }
-
-        .game-card img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-
-        .game-card .emoji-icon {
-            font-size: 5rem;
-            margin: 10px 0;
-            display: block;
-        }
-
-        .game-card h3 { margin: 10px 0 0 0; }
-
-        /* --- Modální okno (Vyskakovací formulář) --- */
+        /* --- Modals --- */
         .modal {
             display: none;
             position: fixed;
@@ -134,13 +121,9 @@
             right: 20px;
             font-size: 24px;
             cursor: pointer;
-            color: var(--text-color);
         }
 
-        .modal-content label { font-weight: bold; margin-top: 10px; }
-        
-        .modal-content input[type="text"],
-        .modal-content textarea {
+        input {
             width: 100%;
             padding: 10px;
             margin-top: 5px;
@@ -150,73 +133,85 @@
             color: var(--text-color);
             box-sizing: border-box;
         }
-
-        .modal-content button[type="button"] {
-            background-color: var(--primary-color);
-            color: var(--btn-text);
-            border: none;
-            padding: 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 15px;
-        }
         
-        .divider {
-            text-align: center;
-            margin: 5px 0;
-            font-size: 0.9em;
-            opacity: 0.7;
-        }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>🎮 Můj Game Hub</h1>
+        <h1>🎮 Online Game Hub</h1>
         <div class="controls">
-            <button id="addGameBtn">+ Přidat hru</button>
-            <button id="themeToggle">🌓 Změnit motiv</button>
+            <span id="userInfo" class="user-info hidden"></span>
+            <button id="loginBtn">Přihlásit se</button>
+            <button id="logoutBtn" class="hidden">Odhlásit</button>
+            <button id="addGameBtn" class="hidden">+ Přidat hru</button>
+            <button id="themeToggle">🌓 Motiv</button>
         </div>
     </header>
 
     <main>
         <div class="grid" id="gameGrid">
-            <!-- Vygenerované hry se objeví zde -->
+            <p>Přihlas se a připrav se na hry!</p>
         </div>
     </main>
 
-    <!-- Vyskakovací okno pro přidání hry -->
-    <div id="addModal" class="modal">
+    <div id="authModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" id="closeModal">&times;</span>
-            <h2>Přidat novou hru</h2>
+            <span class="close-btn" id="closeAuthModal">&times;</span>
+            <h2 id="authTitle">Přihlášení</h2>
             
-            <label for="gameTitle">Název hry:</label>
-            <input type="text" id="gameTitle" placeholder="Např. Tetris" required>
-
-            <label>Obrázek (vyber z PC):</label>
-            <input type="file" id="gameImage" accept="image/*">
+            <input type="email" id="emailInput" placeholder="E-mail" required>
+            <input type="password" id="passwordInput" placeholder="Heslo" required>
             
-            <div class="divider">NEBO</div>
-
-            <label for="gameEmoji">Emoji ikona:</label>
-            <input type="text" id="gameEmoji" placeholder="Např. 👾 (Pokud nenahraješ obrázek)">
-
-            <label for="gameHtml">Zdrojový HTML kód hry:</label>
-            <textarea id="gameHtml" rows="5" placeholder="Sem vlož celý <html> kód hry..." required></textarea>
-
-            <button type="button" id="saveGameBtn">Uložit hru</button>
+            <button id="submitAuthBtn">Přihlásit</button>
+            <p style="text-align: center; font-size: 0.9em; cursor: pointer; color: var(--primary-color);" id="toggleAuthMode">Nemáš účet? Registruj se zde.</p>
         </div>
     </div>
 
-    <script>
-        // --- JAVASCRIPT: Logika aplikace ---
+    <script type="module">
+        // 1. Import Firebase SDK modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+        // Firestore import prepared for the next step
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-        // 1. Tmavý / Světlý režim
+        // 2. Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4",
+            authDomain: "gamehub-7fb7c.firebaseapp.com",
+            projectId: "gamehub-7fb7c",
+            storageBucket: "gamehub-7fb7c.firebasestorage.app",
+            messagingSenderId: "981399258007",
+            appId: "1:981399258007:web:abb3110a97d0069241fad2",
+            measurementId: "G-9H04VEW95K"
+        };
+
+        // 3. Initialize Firebase & Services
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- UI Elements ---
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const addGameBtn = document.getElementById('addGameBtn');
+        const userInfo = document.getElementById('userInfo');
+        const authModal = document.getElementById('authModal');
+        const closeAuthModal = document.getElementById('closeAuthModal');
+        
+        // --- Auth Variables ---
+        let isLoginMode = true; // true = login, false = register
+
+        // --- Theme Management ---
         const themeToggleBtn = document.getElementById('themeToggle');
-        const currentTheme = localStorage.getItem('theme') || 'dark'; // Výchozí je tmavý
-
+        const currentTheme = localStorage.getItem('theme') || 'dark';
         document.body.setAttribute('data-theme', currentTheme);
 
         themeToggleBtn.addEventListener('click', () => {
@@ -226,96 +221,71 @@
             localStorage.setItem('theme', newTheme);
         });
 
-        // 2. Obsluha Modálního okna (vyskakovací formulář)
-        const modal = document.getElementById('addModal');
-        const addGameBtn = document.getElementById('addGameBtn');
-        const closeModal = document.getElementById('closeModal');
+        // --- Auth Modal Logic ---
+        loginBtn.addEventListener('click', () => authModal.style.display = 'flex');
+        closeAuthModal.addEventListener('click', () => authModal.style.display = 'none');
+        
+        document.getElementById('toggleAuthMode').addEventListener('click', (e) => {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').innerText = isLoginMode ? 'Přihlášení' : 'Registrace';
+            document.getElementById('submitAuthBtn').innerText = isLoginMode ? 'Přihlásit' : 'Vytvořit účet';
+            e.target.innerText = isLoginMode ? 'Nemáš účet? Registruj se zde.' : 'Máš účet? Přihlas se zde.';
+        });
 
-        addGameBtn.onclick = () => modal.style.display = 'flex';
-        closeModal.onclick = () => modal.style.display = 'none';
-        window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; }
+        // --- Handle Login / Register Submit ---
+        document.getElementById('submitAuthBtn').addEventListener('click', async () => {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
 
-        // 3. Načítání a ukládání her
-        let games = JSON.parse(localStorage.getItem('myGames')) || [];
-
-        function renderGames() {
-            const grid = document.getElementById('gameGrid');
-            grid.innerHTML = ''; // Vymazat grid
-
-            games.forEach((game, index) => {
-                const card = document.createElement('div');
-                card.className = 'game-card';
-                
-                // Kontrola, jestli má hra obrázek nebo emoji
-                let mediaHtml = '';
-                if (game.image) {
-                    mediaHtml = `<img src="${game.image}" alt="${game.title}">`;
-                } else {
-                    mediaHtml = `<span class="emoji-icon">${game.emoji || '🎮'}</span>`;
-                }
-
-                card.innerHTML = `
-                    ${mediaHtml}
-                    <h3>${game.title}</h3>
-                `;
-
-                // Po kliknutí otevře novou kartu a vloží do ní HTML kód hry
-                card.onclick = () => {
-                    const newWindow = window.open();
-                    newWindow.document.write(game.html);
-                    newWindow.document.close();
-                };
-
-                grid.appendChild(card);
-            });
-        }
-
-        // 4. Uložení nové hry
-        document.getElementById('saveGameBtn').addEventListener('click', () => {
-            const title = document.getElementById('gameTitle').value;
-            const emoji = document.getElementById('gameEmoji').value;
-            const htmlContent = document.getElementById('gameHtml').value;
-            const imageInput = document.getElementById('gameImage');
-
-            if (!title || !htmlContent) {
-                alert('Prosím, vyplň alespoň Název a HTML kód hry!');
+            if(!email || !password) {
+                alert("Vyplň email a heslo!");
                 return;
             }
 
-            // Funkce pro přidání hry do pole a uložení
-            const addGameToArray = (imgData) => {
-                games.push({
-                    title: title,
-                    image: imgData,
-                    emoji: emoji,
-                    html: htmlContent
-                });
-                localStorage.setItem('myGames', JSON.stringify(games));
-                renderGames();
-                
-                // Vyčištění formuláře a zavření
-                document.getElementById('gameTitle').value = '';
-                document.getElementById('gameEmoji').value = '';
-                document.getElementById('gameHtml').value = '';
-                document.getElementById('gameImage').value = '';
-                modal.style.display = 'none';
-            };
-
-            // Pokud uživatel vybral obrázek z PC, převedeme ho na Base64
-            if (imageInput.files && imageInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    addGameToArray(e.target.result);
-                };
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                // Pokud není obrázek, uložíme jen emoji
-                addGameToArray(null);
+            try {
+                if(isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                }
+                authModal.style.display = 'none'; // Close modal on success
+                document.getElementById('emailInput').value = '';
+                document.getElementById('passwordInput').value = '';
+            } catch (error) {
+                alert("Chyba: " + error.message);
+                console.error("Auth Error:", error);
             }
         });
 
-        // Při prvním načtení stránky vykreslíme uložené hry
-        renderGames();
+        // --- Handle Logout ---
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout Error:", error);
+            }
+        });
+
+        // --- Auth State Observer ---
+        // This triggers automatically whenever a user logs in or out
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in
+                userInfo.innerText = user.email;
+                userInfo.classList.remove('hidden');
+                logoutBtn.classList.remove('hidden');
+                addGameBtn.classList.remove('hidden');
+                loginBtn.classList.add('hidden');
+            } else {
+                // User is signed out
+                userInfo.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+                addGameBtn.classList.add('hidden');
+                loginBtn.classList.remove('hidden');
+                userInfo.innerText = '';
+            }
+        });
+
     </script>
 </body>
 </html>
