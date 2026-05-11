@@ -98,7 +98,6 @@
             if (event.target.classList.contains('modal')) event.target.style.display = 'none';
         }
 
-        // UPRAVENO: Když jeden zavře, zapíše "closed", aby se to zavřelo i druhému
         window.closeGame = async () => { 
             if(currentRoomId) {
                 const ref = doc(db, "rooms", currentRoomId);
@@ -189,8 +188,11 @@
             currentRoomId = code; document.getElementById('displayCode').innerText = code;
             document.getElementById('waitingArea').classList.remove('hidden');
             const ref = doc(db, "rooms", code);
+            
+            // PŘIDÁNO: Zapsání nicku hostitele (hostName) do databáze
             await setDoc(ref, { 
                 hostId: auth.currentUser.uid, 
+                hostName: auth.currentUser.displayName || "Neznámý", 
                 status: "waiting", 
                 board: Array(9).fill(null), 
                 turn: 'X',
@@ -210,8 +212,17 @@
             const code = document.getElementById('roomCodeInput').value.toUpperCase();
             const ref = doc(db, "rooms", code); const s = await getDoc(ref);
             if (s.exists() && s.data().status === "waiting") {
-                currentRoomId = code; await updateDoc(ref, { guestId: auth.currentUser.uid, status: "playing" }); launch(false);
-            } else alert("Nenalezeno");
+                currentRoomId = code; 
+                
+                // PŘIDÁNO: Zapsání nicku hosta (guestName) do databáze
+                await updateDoc(ref, { 
+                    guestId: auth.currentUser.uid, 
+                    guestName: auth.currentUser.displayName || "Neznámý",
+                    status: "playing" 
+                }); 
+                
+                launch(false);
+            } else alert("Nenalezeno nebo již probíhá hra");
         };
 
         function launch(isHost) {
