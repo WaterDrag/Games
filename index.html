@@ -20,7 +20,9 @@
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background-color: var(--card-bg); box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; z-index: 1000; }
         .controls { display: flex; align-items: center; gap: 15px; position: relative; }
         .user-info { font-weight: bold; color: var(--primary-color); font-size: 0.95rem; }
-        button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button { background-color: var(--primary-color); color: var(--btn-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: filter 0.2s; }
+        button:hover:not(:disabled) { filter: brightness(1.1); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
         .icon-btn { padding: 8px; font-size: 1.3rem; background: transparent; color: var(--text-color); border: none; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
         
         .dropdown { position: absolute; top: 55px; right: 0; background-color: var(--dropdown-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.3); width: 200px; display: none; flex-direction: column; overflow: hidden; z-index: 1001; }
@@ -32,7 +34,6 @@
         .game-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; text-align: center; display: flex; flex-direction: column; min-height: 180px; transition: transform 0.3s; position: relative; }
         .game-card:hover { transform: translateY(-5px); }
 
-        /* OPRAVA: Overlay je nyní Flexbox a má vlastní lištu, aby se nepřekrývaly prvky */
         #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 20000; flex-direction: column; }
         .overlay-bar { height: 50px; background: var(--card-bg); display: flex; justify-content: flex-end; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border-color); z-index: 20001; }
         #gameFrame { width: 100%; flex-grow: 1; border: none; }
@@ -42,6 +43,11 @@
         .modal-content { background: var(--card-bg); padding: 30px; border-radius: 16px; width: 95%; max-width: 500px; display: flex; flex-direction: column; gap: 12px; position: relative; max-height: 90vh; overflow-y: auto; }
         input, textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); color: var(--text-color); box-sizing: border-box; }
         .hidden { display: none !important; }
+
+        .player-list { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; min-height: 100px; margin: 15px 0; }
+        .player-list-item { padding: 5px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; }
+        .player-list-item:last-child { border-bottom: none; }
+        .host-badge { font-size: 0.8rem; background: var(--primary-color); color: var(--btn-text); padding: 2px 6px; border-radius: 4px; }
     </style>
 </head>
 <body data-theme="dark">
@@ -73,13 +79,50 @@
 
     <div id="authModal" class="modal"><div class="modal-content"><h2>Přihlášení</h2><input type="email" id="emailInput" placeholder="Email"><input type="password" id="passwordInput" placeholder="Heslo"><button id="submitAuthBtn">Vstoupit</button></div></div>
     <div id="nickModal" class="modal"><div class="modal-content"><h2>Změna Nicku</h2><input type="text" id="newNickInput" placeholder="Nová přezdívka"><button id="saveNickBtn">Uložit</button></div></div>
-    <div id="gameModal" class="modal"><div class="modal-content"><h2 id="gameModalTitle">Nová hra</h2><input type="hidden" id="editGameId"><input type="text" id="gameTitle" placeholder="Název hry"><input type="text" id="gameEmoji" placeholder="Emoji"><div style="display:flex; gap:10px; align-items:center;"><input type="checkbox" id="gameIsMobile"><label for="gameIsMobile">Pro mobil 📱</label></div><textarea id="gameHtml" rows="10" placeholder="HTML kód..."></textarea><button id="saveGameBtn">Uložit hru</button></div></div>
-    <div id="lobbyModal" class="modal"><div class="modal-content"><h2 id="lobbyTitle">Lobby</h2><button id="createRoomBtn">Vytvořit místnost</button><div style="margin: 10px 0;"></div><input type="text" id="roomCodeInput" placeholder="Kód místnosti"><button id="joinRoomBtn" style="background:#03dac6">Připojit se</button><div id="waitingArea" class="hidden"><p>Kód: <b id="displayCode" style="font-size:2rem"></b></p></div></div></div>
+    
+    <div id="gameModal" class="modal">
+        <div class="modal-content">
+            <h2 id="gameModalTitle">Nová hra</h2>
+            <input type="hidden" id="editGameId">
+            <input type="text" id="gameTitle" placeholder="Název hry">
+            <input type="text" id="gameEmoji" placeholder="Emoji">
+            <div style="display:flex; gap:15px; align-items:center;">
+                <div><input type="checkbox" id="gameIsMobile"><label for="gameIsMobile"> Pro mobil 📱</label></div>
+                <div style="display:flex; align-items:center; gap:5px;"><label>Max hráčů:</label><input type="number" id="gameMaxPlayers" value="2" min="2" max="10" style="width:60px; margin:0;"></div>
+            </div>
+            <textarea id="gameHtml" rows="10" placeholder="HTML kód..."></textarea>
+            <button id="saveGameBtn">Uložit hru</button>
+        </div>
+    </div>
+    
+    <div id="lobbyModal" class="modal">
+        <div class="modal-content">
+            <h2 id="lobbyTitle">Lobby</h2>
+            
+            <div id="lobbyInitialView">
+                <button id="createRoomBtn">Vytvořit místnost</button>
+                <div style="margin: 15px 0; text-align:center; font-weight:bold;">NEBO</div>
+                <input type="text" id="roomCodeInput" placeholder="Kód místnosti">
+                <button id="joinRoomBtn" style="background:#03dac6; color:#000;">Připojit se</button>
+            </div>
+
+            <div id="lobbyWaitingView" class="hidden">
+                <h1 style="text-align:center; font-size:3rem; margin:0; color:var(--primary-color)" id="displayCode"></h1>
+                <p style="text-align:center; margin:0 0 10px 0;">Kód místnosti</p>
+                
+                <h3>Připojení hráči (<span id="playerCountDisplay">1/2</span>):</h3>
+                <div class="player-list" id="connectedPlayersList"></div>
+                
+                <button id="hostStartGameBtn" class="hidden" style="background:#03dac6; color:#000; width:100%; font-size:1.2rem;">🚀 Spustit hru</button>
+                <div id="guestWaitingMsg" class="hidden" style="text-align:center; color:var(--primary-color); font-weight:bold;">Čekání na hostitele...</div>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, arrayUnion, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4", authDomain: "gamehub-7fb7c.firebaseapp.com", projectId: "gamehub-7fb7c", storageBucket: "gamehub-7fb7c.firebasestorage.app", messagingSenderId: "981399258007", appId: "1:981399258007:web:abb3110a97d0069241fad2" };
         const app = initializeApp(firebaseConfig);
@@ -91,6 +134,7 @@
         let allGames = [];
         let currentRoomId = "";
         let roomStatusUnsub = null;
+        let myCurrentRoomData = null;
 
         window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; closeDropdown(); };
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
@@ -99,15 +143,15 @@
 
         window.onclick = function(event) {
             if (!event.target.closest('.controls')) closeDropdown();
-            if (event.target.classList.contains('modal')) event.target.style.display = 'none';
+            if (event.target.classList.contains('modal') && event.target.id !== 'lobbyModal') {
+                event.target.style.display = 'none';
+            }
         }
 
         window.closeGame = async () => { 
-            if(currentRoomId) {
-                const ref = doc(db, "rooms", currentRoomId);
-                await updateDoc(ref, { status: "closed" });
-            }
+            if(currentRoomId) await updateDoc(doc(db, "rooms", currentRoomId), { status: "closed" });
             isGameRunning = false;
+            if(roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; }
             document.getElementById('gameOverlay').style.display = 'none'; 
             document.getElementById('gameFrame').srcdoc = ""; 
         };
@@ -142,7 +186,9 @@
         window.prepareAddGame = () => {
             document.getElementById('editGameId').value = ""; document.getElementById('gameTitle').value = "";
             document.getElementById('gameEmoji').value = ""; document.getElementById('gameHtml').value = "";
-            document.getElementById('gameIsMobile').checked = false; document.getElementById('gameModalTitle').innerText = "Nová hra";
+            document.getElementById('gameIsMobile').checked = false; 
+            document.getElementById('gameMaxPlayers').value = 2; // Default
+            document.getElementById('gameModalTitle').innerText = "Nová hra";
             openModal('gameModal');
         };
 
@@ -150,7 +196,9 @@
             const g = allGames.find(x => x.id === id);
             document.getElementById('editGameId').value = g.id; document.getElementById('gameTitle').value = g.title;
             document.getElementById('gameEmoji').value = g.emoji; document.getElementById('gameHtml').value = g.html;
-            document.getElementById('gameIsMobile').checked = g.isMobile || false; document.getElementById('gameModalTitle').innerText = "Upravit";
+            document.getElementById('gameIsMobile').checked = g.isMobile || false; 
+            document.getElementById('gameMaxPlayers').value = g.maxPlayers || 2; // Načte nebo 2
+            document.getElementById('gameModalTitle').innerText = "Upravit";
             openModal('gameModal');
         };
 
@@ -158,8 +206,20 @@
 
         document.getElementById('saveGameBtn').onclick = async () => {
             const id = document.getElementById('editGameId').value;
-            const data = { title: document.getElementById('gameTitle').value, emoji: document.getElementById('gameEmoji').value, html: document.getElementById('gameHtml').value, isMobile: document.getElementById('gameIsMobile').checked, createdAt: new Date() };
-            if(id) await updateDoc(doc(db, "games", id), data); else await addDoc(collection(db, "games"), data);
+            const data = { 
+                title: document.getElementById('gameTitle').value, 
+                emoji: document.getElementById('gameEmoji').value, 
+                html: document.getElementById('gameHtml').value, 
+                isMobile: document.getElementById('gameIsMobile').checked, 
+                maxPlayers: parseInt(document.getElementById('gameMaxPlayers').value) || 2, // Uložení limitu
+                createdAt: id ? undefined : new Date() 
+            };
+            // Odebrání undefined hodnot (Firebase to nemá rád)
+            if(!id) delete data.createdAt; data.createdAt = new Date();
+            
+            if(id) { delete data.createdAt; await updateDoc(doc(db, "games", id), data); } 
+            else await addDoc(collection(db, "games"), data);
+            
             closeModal('gameModal');
         };
 
@@ -182,57 +242,124 @@
             if (!auth.currentUser) return openModal('authModal');
             const g = allGames.find(x => x.id === id);
             window.selectedGameHtml = g.html;
+            window.selectedGameMax = g.maxPlayers || 2; // Přečte limit pro hru (pokud neexistuje, 2)
+            
             document.getElementById('lobbyTitle').innerText = g.title;
-            document.getElementById('waitingArea').classList.add('hidden');
+            document.getElementById('lobbyInitialView').classList.remove('hidden');
+            document.getElementById('lobbyWaitingView').classList.add('hidden');
+            document.getElementById('roomCodeInput').value = "";
             openModal('lobbyModal');
         };
 
         document.getElementById('createRoomBtn').onclick = async () => {
             const code = Math.random().toString(36).substring(2, 7).toUpperCase();
-            currentRoomId = code; document.getElementById('displayCode').innerText = code;
-            document.getElementById('waitingArea').classList.remove('hidden');
-            const ref = doc(db, "rooms", code);
+            currentRoomId = code; 
             
-            await setDoc(ref, { 
-                hostId: auth.currentUser.uid, 
-                hostName: auth.currentUser.displayName || "Neznámý", 
+            const myPlayerObj = { 
+                uid: auth.currentUser.uid, 
+                name: auth.currentUser.displayName || "Neznámý", 
+                isHost: true 
+            };
+
+            await setDoc(doc(db, "rooms", code), { 
                 status: "waiting", 
-                board: Array(9).fill(null), 
-                turn: 'X',
-                rematchHost: false,
-                rematchGuest: false
+                players: [myPlayerObj],
+                hostId: myPlayerObj.uid, 
+                hostName: myPlayerObj.name,
+                maxPlayers: window.selectedGameMax, // Uloží se limit do místnosti
+                board: Array(9).fill(null), turn: 'X', rematchHost: false, rematchGuest: false
             });
             
-            roomStatusUnsub = onSnapshot(ref, (s) => { 
-                if (s.data()?.status === "playing") {
-                    if (roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; }
-                    launch(true);
-                }
-            });
+            enterWaitingRoom(code, true);
         };
 
         document.getElementById('joinRoomBtn').onclick = async () => {
             const code = document.getElementById('roomCodeInput').value.toUpperCase();
             const ref = doc(db, "rooms", code); const s = await getDoc(ref);
             if (s.exists() && s.data().status === "waiting") {
+                const roomData = s.data();
+                const max = roomData.maxPlayers || 2;
+                
+                // Ochrana plné místnosti
+                if(roomData.players && roomData.players.length >= max) { 
+                    alert(`Místnost je plná (max ${max} hráči).`); 
+                    return; 
+                }
+
                 currentRoomId = code; 
-                
-                await updateDoc(ref, { 
-                    guestId: auth.currentUser.uid, 
-                    guestName: auth.currentUser.displayName || "Neznámý",
-                    status: "playing" 
-                }); 
-                
-                launch(false);
-            } else alert("Nenalezeno nebo již probíhá hra");
+                const myPlayerObj = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Neznámý", isHost: false };
+                await updateDoc(ref, { players: arrayUnion(myPlayerObj) }); 
+                enterWaitingRoom(code, false);
+            } else alert("Místnost neexistuje nebo už se hraje.");
         };
 
-        function launch(isHost) {
+        function enterWaitingRoom(code, amIHost) {
+            document.getElementById('lobbyInitialView').classList.add('hidden');
+            document.getElementById('lobbyWaitingView').classList.remove('hidden');
+            document.getElementById('displayCode').innerText = code;
+            
+            if(amIHost) {
+                document.getElementById('hostStartGameBtn').classList.remove('hidden');
+                document.getElementById('guestWaitingMsg').classList.add('hidden');
+            } else {
+                document.getElementById('hostStartGameBtn').classList.add('hidden');
+                document.getElementById('guestWaitingMsg').classList.remove('hidden');
+            }
+
+            roomStatusUnsub = onSnapshot(doc(db, "rooms", code), (s) => { 
+                const d = s.data();
+                if(!d) return;
+                myCurrentRoomData = d;
+
+                const max = d.maxPlayers || 2;
+                const currentCount = d.players ? d.players.length : 0;
+                document.getElementById('playerCountDisplay').innerText = `${currentCount}/${max}`;
+
+                const list = document.getElementById('connectedPlayersList');
+                list.innerHTML = "";
+                if(d.players) {
+                    d.players.forEach(p => {
+                        list.innerHTML += `<div class="player-list-item">
+                            <span>${p.name}</span>
+                            ${p.isHost ? '<span class="host-badge">Hostitel</span>' : ''}
+                        </div>`;
+                    });
+                }
+
+                if (d.status === "playing") {
+                    if (roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; }
+                    launch(amIHost, d.players);
+                }
+            });
+        }
+
+        document.getElementById('hostStartGameBtn').onclick = async () => {
+            if(!myCurrentRoomData || !myCurrentRoomData.players || myCurrentRoomData.players.length < 2) {
+                alert("Musíte být alespoň dva!"); return;
+            }
+            
+            const updates = { status: "playing" };
+            if (myCurrentRoomData.players.length >= 2) {
+                updates.guestId = myCurrentRoomData.players[1].uid;
+                updates.guestName = myCurrentRoomData.players[1].name;
+            }
+            
+            await updateDoc(doc(db, "rooms", currentRoomId), updates);
+        };
+
+        function launch(isHost, playersArray) {
             isGameRunning = true;
             closeModal('lobbyModal');
+            
+            const injection = `<script>
+                window.ROOM_ID="${currentRoomId}"; 
+                window.IS_HOST=${isHost};
+                window.MY_UID="${auth.currentUser.uid}";
+                window.PLAYERS=${JSON.stringify(playersArray)};
+            <\/script>`;
+
             const frame = document.getElementById('gameFrame');
-            frame.srcdoc = `<script>window.ROOM_ID="${currentRoomId}"; window.IS_HOST=${isHost};<\/script>${window.selectedGameHtml}`;
-            // OPRAVA: Voláme 'flex', protože Overlay je nyní flex kontejner
+            frame.srcdoc = injection + window.selectedGameHtml;
             document.getElementById('gameOverlay').style.display = 'flex'; 
         }
     </script>
