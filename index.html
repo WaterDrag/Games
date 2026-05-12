@@ -93,7 +93,6 @@
             font-size: 0.85rem;
             font-weight: 500;
         }
-
         .user-chip.show { display: flex; }
 
         .user-avatar {
@@ -204,7 +203,7 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius2);
-            padding: 24px 20px;
+            padding: 24px 20px 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -212,7 +211,7 @@
             cursor: pointer;
             transition: all 0.22s ease;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
             min-height: 160px;
             justify-content: center;
         }
@@ -220,9 +219,11 @@
             content: '';
             position: absolute;
             inset: 0;
+            border-radius: var(--radius2);
             background: linear-gradient(135deg, rgba(124,111,247,0.06), rgba(6,214,160,0.04));
             opacity: 0;
             transition: opacity 0.22s;
+            pointer-events: none;
         }
         .game-card:hover::before { opacity: 1; }
         .game-card:hover {
@@ -235,6 +236,7 @@
             font-size: 3.2rem;
             line-height: 1;
             transition: transform 0.22s;
+            pointer-events: none;
         }
         .game-card:hover .game-emoji { transform: scale(1.12); }
 
@@ -243,6 +245,7 @@
             font-weight: 600;
             text-align: center;
             color: var(--text);
+            pointer-events: none;
         }
 
         .game-badge {
@@ -252,17 +255,24 @@
             background: var(--bg3);
             color: var(--text3);
             border: 1px solid var(--border);
+            pointer-events: none;
         }
 
+        /* ── ADMIN ACTIONS ── */
         .admin-actions {
             display: flex;
             gap: 6px;
-            margin-top: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
         }
 
         .admin-actions .btn {
-            padding: 5px 10px;
-            font-size: 0.75rem;
+            padding: 6px 12px;
+            font-size: 0.78rem;
+            pointer-events: all;
         }
 
         /* ── GAME OVERLAY ── */
@@ -865,8 +875,9 @@
             openM('gameModal');
         };
 
-        window.editGame = (id) => {
+        function editGame(id) {
             const g = allGames.find(x => x.id === id);
+            if (!g) return;
             document.getElementById('editGameId').value = g.id;
             document.getElementById('gameTitle').value = g.title;
             document.getElementById('gameEmoji').value = g.emoji;
@@ -875,14 +886,14 @@
             document.getElementById('gameMaxPlayers').value = g.maxPlayers || 2;
             document.getElementById('gameModalTitle').innerText = "Upravit hru";
             openM('gameModal');
-        };
+        }
 
-        window.deleteGame = async (id) => {
+        async function deleteGame(id) {
             if (confirm("Opravdu smazat tuto hru?")) {
                 await deleteDoc(doc(db, "games", id));
                 toast('Hra smazána.', 'info');
             }
-        };
+        }
 
         document.getElementById('saveGameBtn').onclick = async () => {
             try {
@@ -915,53 +926,82 @@
             if (!isGameRunning) render();
         });
 
- function render() {
-    const grid = document.getElementById('gameGrid');
-    grid.innerHTML = '';
-    if (allGames.length === 0) {
-        grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎮</div><p>Zatím žádné hry. Přidej první!</p></div>`;
-        return;
-    }
-    allGames.forEach(g => {
-        const card = document.createElement('div');
-        card.className = 'game-card';
-        let html = `
-            <div class="game-emoji">${g.emoji}</div>
-            <div class="game-title">${g.title}</div>
-            ${g.isMobile ? '<span class="game-badge">📱 Mobil</span>' : ''}
-            <span class="game-badge">👥 max ${g.maxPlayers || 2}</span>
-        `;
-        if (isAdminMode) {
-            html += `<div class="admin-actions">
-                <button class="btn btn-primary" data-action="play" data-id="${g.id}">▶ Hrát</button>
-                <button class="btn btn-secondary" data-action="edit" data-id="${g.id}">✏️ Edit</button>
-                <button class="btn btn-danger" data-action="delete" data-id="${g.id}">🗑️</button>
-            </div>`;
-        }
-        card.innerHTML = html;
-
-        // Jednotný event listener — správně stopne propagaci
-        card.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-action]');
-            if (btn) {
-                e.stopPropagation();
-                const { action, id } = btn.dataset;
-                if (action === 'play')   openLobby(id);
-                if (action === 'edit')   editGame(id);
-                if (action === 'delete') deleteGame(id);
-            } else if (!isAdminMode) {
-                openLobby(g.id);
+        function render() {
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+            if (allGames.length === 0) {
+                grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎮</div><p>Zatím žádné hry. Přidej první!</p></div>`;
+                return;
             }
-        });
+            allGames.forEach(g => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
 
-        grid.appendChild(card);
-    });
-}
+                // Badges HTML
+                const mobileBadge = g.isMobile ? '<span class="game-badge">📱 Mobil</span>' : '';
+                const playersBadge = `<span class="game-badge">👥 max ${g.maxPlayers || 2}</span>`;
+
+                // Admin tlačítka jako samostatné elementy (ne inline onclick)
+                let adminHTML = '';
+                if (isAdminMode) {
+                    adminHTML = '<div class="admin-actions"></div>';
+                }
+
+                card.innerHTML = `
+                    <div class="game-emoji">${g.emoji}</div>
+                    <div class="game-title">${g.title}</div>
+                    ${mobileBadge}
+                    ${playersBadge}
+                    ${adminHTML}
+                `;
+
+                // Přidej admin tlačítka přes JS (ne innerHTML) — zaručeně fungují
+                if (isAdminMode) {
+                    const actionsDiv = card.querySelector('.admin-actions');
+
+                    const btnPlay = document.createElement('button');
+                    btnPlay.className = 'btn btn-primary';
+                    btnPlay.textContent = '▶ Hrát';
+                    btnPlay.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openLobby(g.id);
+                    });
+
+                    const btnEdit = document.createElement('button');
+                    btnEdit.className = 'btn btn-secondary';
+                    btnEdit.textContent = '✏️ Edit';
+                    btnEdit.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        editGame(g.id);
+                    });
+
+                    const btnDelete = document.createElement('button');
+                    btnDelete.className = 'btn btn-danger';
+                    btnDelete.textContent = '🗑️';
+                    btnDelete.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteGame(g.id);
+                    });
+
+                    actionsDiv.appendChild(btnPlay);
+                    actionsDiv.appendChild(btnEdit);
+                    actionsDiv.appendChild(btnDelete);
+                }
+
+                // Klik na kartu (jen mimo admin mód)
+                if (!isAdminMode) {
+                    card.addEventListener('click', () => openLobby(g.id));
+                }
+
+                grid.appendChild(card);
+            });
+        }
 
         // ── LOBBY ──
         window.openLobby = (id) => {
             if (!auth.currentUser) { openM('authModal'); return; }
             const g = allGames.find(x => x.id === id);
+            if (!g) return;
             window.selectedGameHtml = g.html;
             window.selectedGameMax = g.maxPlayers || 2;
             window.selectedGameTitle = g.title;
@@ -1008,7 +1048,6 @@
                     toast(`Místnost je plná! (max ${rd.maxPlayers || 2} hráči)`, 'error');
                     return;
                 }
-                // Ochrana proti duplicitnímu připojení
                 if (rd.players && rd.players.some(p => p.uid === auth.currentUser.uid)) {
                     toast('Již jsi v této místnosti.', 'info');
                     return;
@@ -1096,7 +1135,7 @@
                     launch(isHost, playersArray);
                 } else {
                     numEl.style.animation = 'none';
-                    numEl.offsetHeight; // reflow
+                    numEl.offsetHeight;
                     numEl.style.animation = '';
                     numEl.textContent = n;
                 }
