@@ -100,10 +100,37 @@
         .admin-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 2; }
         .admin-actions .btn { padding: 6px 12px; font-size: 0.78rem; pointer-events: all; }
 
-        #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 9000; flex-direction: column; }
-        .overlay-bar { height: 52px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; }
-        .overlay-title { font-weight: 600; font-size: 0.95rem; color: var(--text2); }
-        #gameFrame { flex: 1; border: none; width: 100%; }
+        /* ── HERNÍ OVERLAY & ZOOM FIX & ULTRA-WIDE FIX ── */
+        #gameOverlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 9000; flex-direction: column; width: 100vw; height: 100vh; }
+        
+        /* Ultra-wide a Grid fix pro lištu */
+        .overlay-bar { 
+            height: 52px; 
+            background: var(--surface); 
+            border-bottom: 1px solid var(--border); 
+            display: grid; 
+            grid-template-columns: 1fr auto 1fr; /* Rozdělí na 3 sloupce: levý (prázdný), prostřední (text), pravý (tlačítko) */
+            align-items: center; 
+            padding: 0 max(20px, calc(50vw - 800px)); /* Zabrání roztažení na extrémní kraje ultra-wide monitoru */
+            flex-shrink: 0; 
+        }
+        .overlay-title { font-weight: 600; font-size: 1.05rem; color: var(--text2); text-align: center; }
+        .overlay-bar .btn-danger { justify-self: end; } /* Zarovná tlačítko na konec pravého sloupce */
+        
+        /* Fix pro zoomování - drží iframe pevně na místě */
+        .frame-wrapper {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        #gameFrame { 
+            position: absolute;
+            inset: 0; /* Roztáhne se přesně na velikost obalu */
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+        }
 
         .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 5000; align-items: center; justify-content: center; padding: 16px; }
         .modal-backdrop.open { display: flex; }
@@ -181,49 +208,19 @@
 
         /* ── MOBILE RESPONSIVE GUI ── */
         @media (max-width: 768px) {
-            header {
-                flex-wrap: wrap;
-                height: auto;
-                padding: 12px 16px;
-                gap: 12px;
-            }
+            header { flex-wrap: wrap; height: auto; padding: 12px 16px; gap: 12px; }
             .logo { font-size: 1.05rem; }
             .header-right { gap: 8px; }
-            
-            /* Quick join moves to the bottom of the header and takes full width */
-            .quick-join {
-                flex: 1 1 100%;
-                order: 3;
-                max-width: 100%;
-                margin: 0;
-            }
-            
-            /* Compact user chip */
+            .quick-join { flex: 1 1 100%; order: 3; max-width: 100%; margin: 0; }
             #userName { display: none; }
             .user-chip { padding: 4px; border-radius: 50%; }
-            
-            /* Adjust grid and cards for mobile */
-            #gameGrid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                gap: 14px;
-                padding: 16px;
-                height: calc(100vh - 120px); /* Adjust based on new header height */
-            }
+            #gameGrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; padding: 16px; height: calc(100vh - 120px); }
             .game-card { min-height: 140px; padding: 16px 14px 12px; }
             .game-emoji { font-size: 2.6rem; }
-            
-            /* Modals adjust to full width */
-            .modal-box {
-                max-width: calc(100vw - 32px);
-                padding: 20px;
-                margin: 16px;
-            }
+            .modal-box { max-width: calc(100vw - 32px); padding: 20px; margin: 16px; }
             .room-code-display { font-size: 2.2rem; padding: 12px; }
-            
             .btn { padding: 8px 14px; font-size: 0.8rem; }
             .quick-join input { font-size: 0.9rem; padding: 8px 10px; }
-            
-            /* Hide text on some buttons to save space */
             .mobile-hide-text { display: none; }
         }
     </style>
@@ -263,10 +260,15 @@
 
 <div id="gameOverlay">
     <div class="overlay-bar">
+        <!-- Prázdný div pro vyvážení CSS Gridu nalevo -->
+        <div></div> 
         <span class="overlay-title" id="overlayTitle">Hraje se...</span>
         <button class="btn btn-danger" onclick="closeGame()">✕ Ukončit hru</button>
     </div>
-    <iframe id="gameFrame" allow="autoplay"></iframe>
+    <!-- Wrapper zabraňuje rozbití iframe při zoomování -->
+    <div class="frame-wrapper">
+        <iframe id="gameFrame" allow="autoplay"></iframe>
+    </div>
 </div>
 
 <div id="countdownOverlay">
@@ -276,7 +278,7 @@
 
 <div id="toastContainer"></div>
 
-<!-- EXPLORE MODAL (Nový modal pro vyhledávání veřejných her) -->
+<!-- EXPLORE MODAL -->
 <div id="exploreModal" class="modal-backdrop" onclick="backdropClose(event,'exploreModal')">
     <div class="modal-box">
         <div class="modal-title">🌍 Veřejné hry</div>
@@ -335,11 +337,8 @@
     <div class="modal-box">
         <div class="modal-title" id="lobbyTitle">Lobby</div>
 
-        <!-- Initial view -->
         <div id="lobbyInitialView">
             <div style="display:flex;flex-direction:column;gap:12px;">
-
-                <!-- Visibility choice -->
                 <div class="form-group">
                     <label class="form-label">Typ místnosti</label>
                     <div class="visibility-toggle">
@@ -350,7 +349,6 @@
 
                 <button class="btn btn-primary" id="createRoomBtn" style="justify-content:center;">🏠 Vytvořit místnost</button>
 
-                <!-- Public rooms for this game -->
                 <div id="publicRoomsSection">
                     <div class="divider">nebo se připoj k veřejné</div>
                     <div class="public-rooms-list" id="publicRoomsList">
@@ -358,7 +356,6 @@
                     </div>
                 </div>
 
-                <!-- Private join by code (always available too) -->
                 <div class="divider">nebo kódem</div>
                 <div class="form-group">
                     <input type="text" id="roomCodeInput" placeholder="XXXXX" maxlength="5" style="text-transform:uppercase;text-align:center;font-family:'Orbitron',monospace;font-size:1.3rem;letter-spacing:0.1em;">
@@ -368,7 +365,6 @@
             </div>
         </div>
 
-        <!-- Waiting room -->
         <div id="lobbyWaitingView" class="hidden">
             <div style="display:flex;flex-direction:column;gap:14px;">
                 <div class="room-code-display" id="displayCode" onclick="copyCode()" title="Klikni pro kopírování">
@@ -412,10 +408,9 @@
     let myCurrentRoomData = null;
     let selectedVisibility = 'public';
     let heartbeatInterval = null;
-    const HEARTBEAT_MS = 15000;   // write presence every 15s
-    const GHOST_TIMEOUT = 40000;  // mark ghost after 40s
+    const HEARTBEAT_MS = 15000;
+    const GHOST_TIMEOUT = 40000;
 
-    // ── TOAST ──
     function toast(msg, type = 'info') {
         const icons = { info: 'ℹ️', success: '✅', error: '❌' };
         const el = document.createElement('div');
@@ -443,7 +438,6 @@
         closeDD();
     };
 
-    // ── AUTH ──
     onAuthStateChanged(auth, (user) => {
         if (user) {
             const name = user.displayName || user.email;
@@ -492,7 +486,6 @@
         closeDD(); render();
     };
 
-    // ── GAME CRUD ──
     window.prepareAddGame = () => {
         document.getElementById('editGameId').value = ""; document.getElementById('gameTitle').value = ""; document.getElementById('gameEmoji').value = ""; document.getElementById('gameHtml').value = ""; document.getElementById('gameIsMobile').checked = false; document.getElementById('gameMaxPlayers').value = 2; document.getElementById('gameModalTitle').innerText = "Nová hra";
         openM('gameModal');
@@ -540,7 +533,6 @@
         });
     }
 
-    // ── VISIBILITY ──
     window.setVis = (v) => {
         selectedVisibility = v;
         document.getElementById('visPublicBtn').classList.toggle('active', v === 'public');
@@ -548,7 +540,6 @@
         document.getElementById('publicRoomsSection').classList.toggle('hidden', v === 'private');
     };
 
-    // ── EXPLORE (Globální hledání her) ──
     window.openExplore = () => {
         if (!auth.currentUser) { openM('authModal'); return; }
         openM('exploreModal');
@@ -594,7 +585,6 @@
         );
     };
 
-    // ── LOBBY ──
     window.openLobby = (gameId) => {
         if (!auth.currentUser) { openM('authModal'); return; }
         const g = allGames.find(x => x.id === gameId); if (!g) return;
@@ -612,7 +602,6 @@
         loadPublicRooms(g.id);
     };
 
-    // Load open public rooms for this specific game
     function loadPublicRooms(gameId) {
         if (publicRoomsUnsub) { publicRoomsUnsub(); publicRoomsUnsub = null; }
         const listEl = document.getElementById('publicRoomsList');
@@ -656,7 +645,6 @@
         else { if (publicRoomsUnsub) { publicRoomsUnsub(); publicRoomsUnsub = null; } closeM('lobbyModal'); }
     };
 
-    // ── HEARTBEAT — prevents ghosts ──
     async function startHeartbeat(roomId) {
         stopHeartbeat();
         async function beat() {
@@ -678,17 +666,15 @@
         if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
     }
 
-    // Mark players as ghosts if lastSeen too old, remove if no active remain
     function reconcilePlayers(players) {
         const now = Date.now();
         return players.map(p => {
-            if (!p.lastSeen) return p; // old entry, keep as-is
+            if (!p.lastSeen) return p;
             const isGhost = (now - p.lastSeen) > GHOST_TIMEOUT;
             return { ...p, ghost: isGhost };
         });
     }
 
-    // ── CREATE ROOM ──
     document.getElementById('createRoomBtn').onclick = async () => {
         if (!auth.currentUser) { openM('authModal'); return; }
         const code = Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -709,14 +695,12 @@
         enterWaitingRoom(code, true);
     };
 
-    // ── JOIN BY CODE (in lobby) ──
     document.getElementById('joinRoomBtn').onclick = async () => {
         const code = document.getElementById('roomCodeInput').value.toUpperCase().trim();
         if (!code) return toast('Zadejte kód místnosti.', 'error');
         await joinRoom(code);
     };
 
-    // ── QUICK JOIN (header) ──
     window.quickJoin = async () => {
         if (!auth.currentUser) { openM('authModal'); return; }
         const code = document.getElementById('quickCodeInput').value.toUpperCase().trim();
@@ -725,7 +709,6 @@
     };
     document.getElementById('quickCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') window.quickJoin(); });
 
-    // ── CORE JOIN ──
     async function joinRoom(code) {
         if (!auth.currentUser) { openM('authModal'); return; }
         const ref = doc(db, "rooms", code);
@@ -738,7 +721,6 @@
         if (activePlayers.length >= (rd.maxPlayers || 2)) return toast(`Místnost je plná! (max ${rd.maxPlayers || 2})`, 'error');
         if (activePlayers.some(p => p.uid === auth.currentUser.uid)) return toast('Již jsi v této místnosti.', 'info');
 
-        // Load game info from room if joined via code without selecting a game
         if (!window.selectedGameId && rd.gameId) {
             const g = allGames.find(x => x.id === rd.gameId);
             if (g) {
@@ -747,7 +729,6 @@
                 window.selectedGameMax   = g.maxPlayers || 2;
                 window.selectedGameTitle = g.title;
             } else {
-                // Fetch from Firestore if not loaded yet
                 try {
                     const gSnap = await getDoc(doc(db, "games", rd.gameId));
                     if (gSnap.exists()) {
@@ -765,14 +746,12 @@
         currentRoomId = code;
         const me = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Hráč", isHost: false, lastSeen: Date.now(), ghost: false };
 
-        // Replace ghost slot of same uid, or append
         let players = (rd.players || []);
         const existingIdx = players.findIndex(p => p.uid === auth.currentUser.uid);
         if (existingIdx >= 0) players[existingIdx] = me;
         else players = [...players, me];
         await updateDoc(ref, { players });
 
-        // Open lobby UI if not already showing lobby
         if (!document.getElementById('lobbyModal').classList.contains('open')) {
             document.getElementById('lobbyTitle').innerText = window.selectedGameTitle || 'Hra';
             document.getElementById('lobbyInitialView').classList.remove('hidden');
@@ -797,7 +776,6 @@
             const d = s.data();
             if (!d) return;
 
-            // Reconcile ghosts and write back (host does it)
             let players = reconcilePlayers(d.players || []);
             const hasChanges = players.some((p, i) => p.ghost !== (d.players[i]?.ghost));
             if (hasChanges && amIHost) {
@@ -901,7 +879,6 @@
         render();
     };
 
-    // Mark ghost on page unload
     window.addEventListener('beforeunload', () => {
         stopHeartbeat();
         if (currentRoomId && auth.currentUser) {
