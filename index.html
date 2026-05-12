@@ -915,34 +915,48 @@
             if (!isGameRunning) render();
         });
 
-        function render() {
-            const grid = document.getElementById('gameGrid');
-            grid.innerHTML = '';
-            if (allGames.length === 0) {
-                grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎮</div><p>Zatím žádné hry. Přidej první!</p></div>`;
-                return;
+ function render() {
+    const grid = document.getElementById('gameGrid');
+    grid.innerHTML = '';
+    if (allGames.length === 0) {
+        grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎮</div><p>Zatím žádné hry. Přidej první!</p></div>`;
+        return;
+    }
+    allGames.forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        let html = `
+            <div class="game-emoji">${g.emoji}</div>
+            <div class="game-title">${g.title}</div>
+            ${g.isMobile ? '<span class="game-badge">📱 Mobil</span>' : ''}
+            <span class="game-badge">👥 max ${g.maxPlayers || 2}</span>
+        `;
+        if (isAdminMode) {
+            html += `<div class="admin-actions">
+                <button class="btn btn-primary" data-action="play" data-id="${g.id}">▶ Hrát</button>
+                <button class="btn btn-secondary" data-action="edit" data-id="${g.id}">✏️ Edit</button>
+                <button class="btn btn-danger" data-action="delete" data-id="${g.id}">🗑️</button>
+            </div>`;
+        }
+        card.innerHTML = html;
+
+        // Jednotný event listener — správně stopne propagaci
+        card.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (btn) {
+                e.stopPropagation();
+                const { action, id } = btn.dataset;
+                if (action === 'play')   openLobby(id);
+                if (action === 'edit')   editGame(id);
+                if (action === 'delete') deleteGame(id);
+            } else if (!isAdminMode) {
+                openLobby(g.id);
             }
-            allGames.forEach(g => {
-                const card = document.createElement('div');
-                card.className = 'game-card';
-                let html = `
-                    <div class="game-emoji">${g.emoji}</div>
-                    <div class="game-title">${g.title}</div>
-                    ${g.isMobile ? '<span class="game-badge">📱 Mobil</span>' : ''}
-                    <span class="game-badge">👥 max ${g.maxPlayers || 2}</span>
-                `;
-                if (isAdminMode) {
-                    html += `<div class="admin-actions">
-                        <button class="btn btn-secondary" onclick="event.stopPropagation(); editGame('${g.id}')">✏️ Edit</button>
-                        <button class="btn btn-danger" onclick="event.stopPropagation(); deleteGame('${g.id}')">🗑️</button>
-                    </div>`;
-                }
-                card.innerHTML = html;
-                if (!isAdminMode) {
-                    card.onclick = () => openLobby(g.id);
-                }
-                grid.appendChild(card);
-            });
+        });
+
+        grid.appendChild(card);
+    });
+}
         }
 
         // ── LOBBY ──
