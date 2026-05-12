@@ -709,38 +709,8 @@
     };
     document.getElementById('quickCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') window.quickJoin(); });
 
-    async function joinRoom(code) {
-        if (!auth.currentUser) { openM('authModal'); return; }
-        const ref = doc(db, "rooms", code);
-        const s = await getDoc(ref);
-        if (!s.exists()) return toast('Místnost neexistuje.', 'error');
-        const rd = s.data();
-        if (rd.status !== "waiting") return toast('Hra již probíhá nebo skončila.', 'error');
+async function joinRoom(code){if(!auth.currentUser){openM('authModal');return;}const ref=doc(db,"rooms",code);const s=await getDoc(ref);if(!s.exists())return toast('Místnost neexistuje.','error');const rd=s.data();if(rd.status!=="waiting")return toast('Hra již probíhá nebo skončila.','error');const activePlayers=(rd.players||[]).filter(p=>!p.ghost);if(activePlayers.length>=(rd.maxPlayers||2))return toast(`Místnost je plná! (max ${rd.maxPlayers||2})`,'error');if(activePlayers.some(p=>p.uid===auth.currentUser.uid))return toast('Již jsi v této místnosti.','info');if(rd.gameId){const g=allGames.find(x=>x.id===rd.gameId);if(g){window.selectedGameId=g.id;window.selectedGameHtml=g.html;window.selectedGameMax=g.maxPlayers||2;window.selectedGameTitle=g.title;}else{try{const gSnap=await getDoc(doc(db,"games",rd.gameId));if(gSnap.exists()){const gd=gSnap.data();window.selectedGameId=rd.gameId;window.selectedGameHtml=gd.html;window.selectedGameMax=gd.maxPlayers||2;window.selectedGameTitle=gd.title||rd.gameTitle||'Hra';}}catch(_){}}}if(!window.selectedGameHtml)return toast('Nepodařilo se načíst hru pro tuto místnost.','error');currentRoomId=code;const me={uid:auth.currentUser.uid,name:auth.currentUser.displayName||"Hráč",isHost:false,lastSeen:Date.now(),ghost:false};let players=(rd.players||[]);const existingIdx=players.findIndex(p=>p.uid===auth.currentUser.uid);if(existingIdx>=0)players[existingIdx]=me;else players=[...players,me];await updateDoc(ref,{players});if(!document.getElementById('lobbyModal').classList.contains('open')){document.getElementById('lobbyTitle').innerText=window.selectedGameTitle||'Hra';document.getElementById('lobbyInitialView').classList.remove('hidden');document.getElementById('lobbyWaitingView').classList.add('hidden');openM('lobbyModal');}if(publicRoomsUnsub){publicRoomsUnsub();publicRoomsUnsub=null;}await startHeartbeat(code);enterWaitingRoom(code,false);}
 
-        const activePlayers = (rd.players || []).filter(p => !p.ghost);
-        if (activePlayers.length >= (rd.maxPlayers || 2)) return toast(`Místnost je plná! (max ${rd.maxPlayers || 2})`, 'error');
-        if (activePlayers.some(p => p.uid === auth.currentUser.uid)) return toast('Již jsi v této místnosti.', 'info');
-
-        if (!window.selectedGameId && rd.gameId) {
-            const g = allGames.find(x => x.id === rd.gameId);
-            if (g) {
-                window.selectedGameId    = g.id;
-                window.selectedGameHtml  = g.html;
-                window.selectedGameMax   = g.maxPlayers || 2;
-                window.selectedGameTitle = g.title;
-            } else {
-                try {
-                    const gSnap = await getDoc(doc(db, "games", rd.gameId));
-                    if (gSnap.exists()) {
-                        const gd = gSnap.data();
-                        window.selectedGameId    = rd.gameId;
-                        window.selectedGameHtml  = gd.html;
-                        window.selectedGameMax   = gd.maxPlayers || 2;
-                        window.selectedGameTitle = gd.title || rd.gameTitle || 'Hra';
-                    }
-                } catch (_) {}
-            }
-        }
         if (!window.selectedGameHtml) return toast('Nepodařilo se načíst hru pro tuto místnost.', 'error');
 
         currentRoomId = code;
@@ -866,18 +836,7 @@
         document.getElementById('gameOverlay').style.display = 'flex';
     }
 
-    window.closeGame = async () => {
-        stopHeartbeat();
-        if (currentRoomId) {
-            try { await updateDoc(doc(db, "rooms", currentRoomId), { status: "closed" }); } catch (_) {}
-        }
-        isGameRunning = false;
-        if (roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; }
-        document.getElementById('gameOverlay').style.display = 'none';
-        document.getElementById('gameFrame').srcdoc = '';
-        currentRoomId = '';
-        render();
-    };
+window.closeGame=async()=>{stopHeartbeat();if(currentRoomId){try{await updateDoc(doc(db,"rooms",currentRoomId),{status:"closed"});}catch(_){}}isGameRunning=false;if(roomStatusUnsub){roomStatusUnsub();roomStatusUnsub=null;}document.getElementById('gameOverlay').style.display='none';document.getElementById('gameFrame').srcdoc='';currentRoomId='';window.selectedGameId=null;window.selectedGameHtml=null;window.selectedGameMax=null;window.selectedGameTitle=null;render();};
 
     window.addEventListener('beforeunload', () => {
         stopHeartbeat();
