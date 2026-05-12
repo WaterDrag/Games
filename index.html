@@ -43,7 +43,7 @@
         /* Quick join bar in header */
         .quick-join {
             display: flex; align-items: center; gap: 8px;
-            flex: 1; max-width: 320px; margin: 0 auto;
+            flex: 1; max-width: 400px; margin: 0 auto;
         }
         .quick-join input {
             flex: 1; padding: 8px 14px; background: var(--bg2);
@@ -51,9 +51,10 @@
             color: var(--text); font-family: 'Orbitron', monospace;
             font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase;
             outline: none; transition: border-color 0.18s; text-align: center;
+            min-width: 80px;
         }
         .quick-join input:focus { border-color: var(--accent); }
-        .quick-join input::placeholder { font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; letter-spacing: 0; color: var(--text3); }
+        .quick-join input::placeholder { font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; letter-spacing: 0; color: var(--text3); text-transform: none; }
 
         .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
@@ -61,7 +62,7 @@
         .user-chip.show { display: flex; }
         .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent3)); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: white; flex-shrink: 0; }
 
-        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 10px; border: none; font-family: 'Space Grotesk', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.18s ease; white-space: nowrap; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 10px; border: none; font-family: 'Space Grotesk', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.18s ease; white-space: nowrap; justify-content: center; }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .btn-primary { background: var(--accent); color: white; }
         .btn-primary:hover:not(:disabled) { background: var(--accent2); transform: translateY(-1px); }
@@ -177,6 +178,54 @@
         .vis-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
         .hidden { display: none !important; }
+
+        /* ── MOBILE RESPONSIVE GUI ── */
+        @media (max-width: 768px) {
+            header {
+                flex-wrap: wrap;
+                height: auto;
+                padding: 12px 16px;
+                gap: 12px;
+            }
+            .logo { font-size: 1.05rem; }
+            .header-right { gap: 8px; }
+            
+            /* Quick join moves to the bottom of the header and takes full width */
+            .quick-join {
+                flex: 1 1 100%;
+                order: 3;
+                max-width: 100%;
+                margin: 0;
+            }
+            
+            /* Compact user chip */
+            #userName { display: none; }
+            .user-chip { padding: 4px; border-radius: 50%; }
+            
+            /* Adjust grid and cards for mobile */
+            #gameGrid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 14px;
+                padding: 16px;
+                height: calc(100vh - 120px); /* Adjust based on new header height */
+            }
+            .game-card { min-height: 140px; padding: 16px 14px 12px; }
+            .game-emoji { font-size: 2.6rem; }
+            
+            /* Modals adjust to full width */
+            .modal-box {
+                max-width: calc(100vw - 32px);
+                padding: 20px;
+                margin: 16px;
+            }
+            .room-code-display { font-size: 2.2rem; padding: 12px; }
+            
+            .btn { padding: 8px 14px; font-size: 0.8rem; }
+            .quick-join input { font-size: 0.9rem; padding: 8px 10px; }
+            
+            /* Hide text on some buttons to save space */
+            .mobile-hide-text { display: none; }
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -184,9 +233,10 @@
 <header>
     <div class="logo">⚡ GAME HUB</div>
 
-    <!-- Quick join by code — works globally, no game selection needed -->
+    <!-- Quick join + Explore -->
     <div class="quick-join">
-        <input type="text" id="quickCodeInput" placeholder="Připojit kódem..." maxlength="5">
+        <button class="btn btn-secondary" onclick="openExplore()" title="Prozkoumat veřejné hry">🌐 <span class="mobile-hide-text">Prozkoumat</span></button>
+        <input type="text" id="quickCodeInput" placeholder="Kód..." maxlength="5">
         <button class="btn btn-success" onclick="quickJoin()" style="padding:9px 14px;">Připojit</button>
     </div>
 
@@ -195,7 +245,7 @@
             <div class="user-avatar" id="userAvatar">?</div>
             <span id="userName"></span>
         </div>
-        <button id="addGameBtn" class="btn btn-success hidden" onclick="prepareAddGame()">+ Přidat hru</button>
+        <button id="addGameBtn" class="btn btn-success hidden" onclick="prepareAddGame()">+ <span class="mobile-hide-text">Přidat hru</span></button>
         <button id="loginBtn" class="btn btn-primary" onclick="openM('authModal')">Přihlásit se</button>
         <div class="dropdown-wrap">
             <button id="settingsBtn" class="btn-icon hidden" onclick="toggleDD(event)">⚙️</button>
@@ -225,6 +275,17 @@
 </div>
 
 <div id="toastContainer"></div>
+
+<!-- EXPLORE MODAL (Nový modal pro vyhledávání veřejných her) -->
+<div id="exploreModal" class="modal-backdrop" onclick="backdropClose(event,'exploreModal')">
+    <div class="modal-box">
+        <div class="modal-title">🌍 Veřejné hry</div>
+        <button class="btn-icon modal-close" onclick="closeM('exploreModal')">✕</button>
+        <div class="public-rooms-list" id="allPublicRoomsList" style="max-height: 400px; margin-top: 10px;">
+            <div class="pub-room-empty">Načítání...</div>
+        </div>
+    </div>
+</div>
 
 <!-- AUTH MODAL -->
 <div id="authModal" class="modal-backdrop" onclick="backdropClose(event,'authModal')">
@@ -347,6 +408,7 @@
     let currentRoomId = "";
     let roomStatusUnsub = null;
     let publicRoomsUnsub = null;
+    let exploreUnsub = null;
     let myCurrentRoomData = null;
     let selectedVisibility = 'public';
     let heartbeatInterval = null;
@@ -486,6 +548,52 @@
         document.getElementById('publicRoomsSection').classList.toggle('hidden', v === 'private');
     };
 
+    // ── EXPLORE (Globální hledání her) ──
+    window.openExplore = () => {
+        if (!auth.currentUser) { openM('authModal'); return; }
+        openM('exploreModal');
+        const listEl = document.getElementById('allPublicRoomsList');
+        listEl.innerHTML = '<div class="pub-room-empty">Načítání...</div>';
+        
+        if (exploreUnsub) { exploreUnsub(); exploreUnsub = null; }
+        
+        exploreUnsub = onSnapshot(
+            query(collection(db, "rooms"), where("visibility", "==", "public"), where("status", "==", "waiting")),
+            (snap) => {
+                const rooms = [];
+                snap.forEach(d => {
+                    const rd = d.data();
+                    const activePlayers = (rd.players || []).filter(p => !p.ghost);
+                    if (activePlayers.length > 0 && activePlayers.length < (rd.maxPlayers || 2)) {
+                        rooms.push({ id: d.id, ...rd, activePlayers });
+                    }
+                });
+
+                listEl.innerHTML = '';
+                if (rooms.length === 0) {
+                    listEl.innerHTML = '<div class="pub-room-empty">Momentálně nikdo nehledá spoluhráče. Zkus nějakou hru založit!</div>';
+                    return;
+                }
+                
+                rooms.forEach(r => {
+                    const div = document.createElement('div');
+                    div.className = 'pub-room-item';
+                    div.innerHTML = `
+                        <div class="pub-room-left">
+                            <div class="pub-room-host">🎮 ${r.gameTitle || 'Hra'}</div>
+                            <div class="pub-room-meta">🏠 Host: ${r.hostName || '?'} | Kód: ${r.id}</div>
+                        </div>
+                        <div class="pub-room-count">${r.activePlayers.length}/${r.maxPlayers || 2} hráčů</div>`;
+                    div.onclick = () => {
+                        closeM('exploreModal');
+                        joinRoom(r.id);
+                    };
+                    listEl.appendChild(div);
+                });
+            }
+        );
+    };
+
     // ── LOBBY ──
     window.openLobby = (gameId) => {
         if (!auth.currentUser) { openM('authModal'); return; }
@@ -504,7 +612,7 @@
         loadPublicRooms(g.id);
     };
 
-    // Load open public rooms for this game
+    // Load open public rooms for this specific game
     function loadPublicRooms(gameId) {
         if (publicRoomsUnsub) { publicRoomsUnsub(); publicRoomsUnsub = null; }
         const listEl = document.getElementById('publicRoomsList');
@@ -514,7 +622,6 @@
             query(collection(db, "rooms"), where("gameId", "==", gameId), where("visibility", "==", "public"), where("status", "==", "waiting")),
             (snap) => {
                 const now = Date.now();
-                // Filter out rooms with no real (non-ghost) players
                 const rooms = [];
                 snap.forEach(d => {
                     const rd = d.data();
@@ -666,9 +773,7 @@
         await updateDoc(ref, { players });
 
         // Open lobby UI if not already showing lobby
-        if (document.getElementById('lobbyModal').classList.contains('open')) {
-            // already in lobby — just go to waiting view
-        } else {
+        if (!document.getElementById('lobbyModal').classList.contains('open')) {
             document.getElementById('lobbyTitle').innerText = window.selectedGameTitle || 'Hra';
             document.getElementById('lobbyInitialView').classList.remove('hidden');
             document.getElementById('lobbyWaitingView').classList.add('hidden');
@@ -800,7 +905,6 @@
     window.addEventListener('beforeunload', () => {
         stopHeartbeat();
         if (currentRoomId && auth.currentUser) {
-            // best-effort sync beacon
             const ref = doc(db, "rooms", currentRoomId);
             getDoc(ref).then(s => {
                 if (!s.exists()) return;
