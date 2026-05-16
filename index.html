@@ -55,13 +55,10 @@
         .game-badge {font-size:0.72rem;padding:3px 8px;border-radius:50px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);pointer-events:none;}
         .admin-actions {display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center;position:relative;z-index:2;}
         .admin-actions .btn {padding:6px 12px;font-size:0.78rem;pointer-events:all;}
-
-        /* --- HERNÍ OVERLAY BEZ LIŠTY --- */
         #gameOverlay {display:none;position:fixed;inset:0;background:var(--bg);z-index:9000;}
         .floating-close-btn {position:fixed;top:20px;right:20px;z-index:9999;box-shadow:0 6px 16px rgba(0,0,0,0.4);padding:10px 18px;font-size:0.95rem;}
         .frame-wrapper {position:absolute;inset:0;width:100%;height:100%;overflow:hidden;}
         #gameFrame {position:absolute;inset:0;width:100%;height:100%;border:none;}
-
         .modal-backdrop {display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;padding:16px;}
         .modal-backdrop.open {display:flex;}
         .modal-box {background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius2);padding:28px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;position:relative;}
@@ -98,6 +95,8 @@
         .player-dot.ghost {background:var(--text3);}
         .host-tag {font-size:0.7rem;padding:2px 8px;border-radius:50px;background:rgba(124,111,247,0.2);color:var(--accent2);font-weight:600;}
         .ghost-tag {font-size:0.7rem;padding:2px 8px;border-radius:50px;background:rgba(255,87,87,0.15);color:var(--danger);font-weight:600;}
+        .rejoin-tag {font-size:0.7rem;padding:2px 8px;border-radius:50px;background:rgba(6,214,160,0.15);color:var(--accent3);font-weight:600;}
+        .abandoned-tag {font-size:0.7rem;padding:2px 8px;border-radius:50px;background:rgba(255,87,87,0.1);color:var(--text3);font-weight:600;text-decoration:line-through;}
         .count-badge {font-size:0.82rem;color:var(--text2);font-weight:600;}
         .waiting-anim {text-align:center;padding:12px;font-size:0.88rem;color:var(--accent2);font-weight:600;}
         .waiting-dots::after {content:'';animation:dots 1.5s infinite;}
@@ -123,6 +122,14 @@
         .visibility-toggle {display:flex;gap:8px;}
         .vis-btn {flex:1;padding:8px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-family:'Space Grotesk',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.18s;text-align:center;}
         .vis-btn.active {background:var(--accent);color:white;border-color:var(--accent);}
+
+        /* Rejoin banner */
+        #rejoinBanner {display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);border-radius:var(--radius2);padding:16px 24px;z-index:4000;box-shadow:0 8px 32px rgba(124,111,247,0.3);text-align:center;max-width:360px;width:90%;}
+        #rejoinBanner.show {display:block;}
+        #rejoinBanner p {font-size:0.9rem;color:var(--text2);margin-bottom:12px;}
+        #rejoinBanner strong {color:var(--accent2);font-family:'Orbitron',monospace;}
+        #rejoinBanner .btn-row {display:flex;gap:8px;justify-content:center;}
+
         .hidden {display:none !important;}
         @media(max-width:768px) {
             header {flex-wrap:wrap;height:auto;padding:12px 16px;gap:12px;}
@@ -169,8 +176,16 @@
 
 <main id="gameGrid"></main>
 
+<!-- Rejoin banner – zobrazí se při obnovení stránky pokud je hráč ve hře -->
+<div id="rejoinBanner">
+    <p>Byl jsi ve hře <strong id="rejoinGameTitle">?</strong>.<br>Chceš se vrátit?</p>
+    <div class="btn-row">
+        <button class="btn btn-primary" onclick="doRejoin()">↩ Vrátit se do hry</button>
+        <button class="btn btn-ghost" onclick="dismissRejoin()">Opustit hru</button>
+    </div>
+</div>
+
 <div id="gameOverlay">
-    <!-- Plovoucí tlačítko nad hrou, lišta je smazaná -->
     <button class="btn btn-danger floating-close-btn" onclick="closeGame()">✕ Ukončit hru</button>
     <div class="frame-wrapper">
         <iframe id="gameFrame" allow="autoplay"></iframe>
@@ -274,7 +289,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, arrayUnion, onSnapshot, query, orderBy, where, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, where, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
     const firebaseConfig = { apiKey: "AIzaSyDA8wXU6vngyY8hmSzClRc7pjmSqRLr-w4", authDomain: "gamehub-7fb7c.firebaseapp.com", projectId: "gamehub-7fb7c", storageBucket: "gamehub-7fb7c.firebasestorage.app", messagingSenderId: "981399258007", appId: "1:981399258007:web:abb3110a97d0069241fad2" };
     const app = initializeApp(firebaseConfig);
@@ -282,55 +297,147 @@
     const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
 
-    let isGameRunning = false; let isAdminMode = false; let allGames = []; let currentRoomId = ""; let roomStatusUnsub = null; let publicRoomsUnsub = null; let exploreUnsub = null; let myCurrentRoomData = null; let selectedVisibility = 'public'; let heartbeatInterval = null;
-    const HEARTBEAT_MS = 15000; const GHOST_TIMEOUT = 40000;
+    // ─── Konstanty ───────────────────────────────────────────────
+    const HEARTBEAT_MS   = 15000;
+    const GHOST_TIMEOUT  = 40000;   // 40s bez heartbeatu = ghost
+    const ABANDON_TIMEOUT = 120000; // 2 min ghost ve hře = abandon
 
+    // ─── Stav aplikace ───────────────────────────────────────────
+    let isGameRunning   = false;
+    let isAdminMode     = false;
+    let allGames        = [];
+    let currentRoomId   = "";
+    let roomStatusUnsub = null;
+    let publicRoomsUnsub = null;
+    let exploreUnsub    = null;
+    let myCurrentRoomData = null;
+    let selectedVisibility = 'public';
+    let heartbeatInterval  = null;
+    let rejoinRoomId       = null;   // kód místnosti uložený pro rejoin
+
+    // ─── localStorage klíče ──────────────────────────────────────
+    const LS_ROOM = 'gh_last_room';  // poslední místnost hráče
+
+    // ─── Toast ───────────────────────────────────────────────────
     function toast(msg, type = 'info') {
         const icons = { info: 'ℹ️', success: '✅', error: '❌' };
-        const el = document.createElement('div'); el.className = `toast ${type}`; el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
-        document.getElementById('toastContainer').appendChild(el); setTimeout(() => el.remove(), 3500);
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+        document.getElementById('toastContainer').appendChild(el);
+        setTimeout(() => el.remove(), 3500);
     }
     window.toast = toast;
+
+    // ─── Modály & dropdowny ──────────────────────────────────────
     window.openM = (id) => { document.getElementById(id).classList.add('open'); closeDD(); };
     window.closeM = (id) => { document.getElementById(id).classList.remove('open'); };
     window.backdropClose = (e, id) => { if (e.target.id === id) closeM(id); };
     window.toggleDD = (e) => { e.stopPropagation(); document.getElementById('settingsDD').classList.toggle('open'); };
     function closeDD() { document.getElementById('settingsDD').classList.remove('open'); }
-    window.closeDD = closeDD; document.addEventListener('click', (e) => { if (!e.target.closest('.dropdown-wrap')) closeDD(); });
+    window.closeDD = closeDD;
+    document.addEventListener('click', (e) => { if (!e.target.closest('.dropdown-wrap')) closeDD(); });
 
-    const savedTheme = localStorage.getItem('theme') || 'dark'; document.body.setAttribute('data-theme', savedTheme);
-    document.getElementById('btnToggleTheme').onclick = () => { const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; document.body.setAttribute('data-theme', next); localStorage.setItem('theme', next); closeDD(); };
+    // ─── Téma ────────────────────────────────────────────────────
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+    document.getElementById('btnToggleTheme').onclick = () => {
+        const next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        closeDD();
+    };
 
-    onAuthStateChanged(auth, (user) => {
+    // ─── Auth ─────────────────────────────────────────────────────
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            const name = user.displayName || user.email; document.getElementById('userName').innerText = name; document.getElementById('userAvatar').innerText = name.charAt(0).toUpperCase();
-            document.getElementById('userChip').classList.add('show'); document.getElementById('loginBtn').classList.add('hidden'); document.getElementById('settingsBtn').classList.remove('hidden');
+            const name = user.displayName || user.email;
+            document.getElementById('userName').innerText = name;
+            document.getElementById('userAvatar').innerText = name.charAt(0).toUpperCase();
+            document.getElementById('userChip').classList.add('show');
+            document.getElementById('loginBtn').classList.add('hidden');
+            document.getElementById('settingsBtn').classList.remove('hidden');
             if (user.email === "zitkatomik007@gmail.com") document.getElementById('btnAdminMode').classList.remove('hidden');
+
+            // Po přihlášení zkontroluj jestli hráč byl ve hře (rejoin check)
+            await checkForRejoin();
         } else {
-            document.getElementById('userChip').classList.remove('show'); document.getElementById('loginBtn').classList.remove('hidden'); document.getElementById('settingsBtn').classList.add('hidden'); document.getElementById('btnAdminMode').classList.add('hidden'); isAdminMode = false;
+            document.getElementById('userChip').classList.remove('show');
+            document.getElementById('loginBtn').classList.remove('hidden');
+            document.getElementById('settingsBtn').classList.add('hidden');
+            document.getElementById('btnAdminMode').classList.add('hidden');
+            isAdminMode = false;
+            hideRejoinBanner();
         }
     });
 
-    document.getElementById('submitAuthBtn').onclick = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); closeM('authModal'); toast('Přihlášení úspěšné!', 'success'); } catch (e) { toast('Chyba: ' + e.message, 'error'); } };
-    document.getElementById('registerBtn').onclick = async () => { try { const email = document.getElementById('emailInput').value, password = document.getElementById('passwordInput').value; if (!email || !password) return toast('Vyplňte email a heslo.', 'error'); const res = await createUserWithEmailAndPassword(auth, email, password); await updateProfile(res.user, { displayName: email.split('@')[0] }); closeM('authModal'); toast('Účet vytvořen!', 'success'); location.reload(); } catch (e) { toast('Chyba registrace: ' + e.message, 'error'); } };
-    document.getElementById('googleLoginBtn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); closeM('authModal'); toast('Google přihlášení úspěšné!', 'success'); } catch (e) { toast('Chyba Google: ' + e.message, 'error'); } };
+    document.getElementById('submitAuthBtn').onclick = async () => {
+        try { await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('passwordInput').value); closeM('authModal'); toast('Přihlášení úspěšné!', 'success'); }
+        catch (e) { toast('Chyba: ' + e.message, 'error'); }
+    };
+    document.getElementById('registerBtn').onclick = async () => {
+        try {
+            const email = document.getElementById('emailInput').value, password = document.getElementById('passwordInput').value;
+            if (!email || !password) return toast('Vyplňte email a heslo.', 'error');
+            const res = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(res.user, { displayName: email.split('@')[0] });
+            closeM('authModal'); toast('Účet vytvořen!', 'success'); location.reload();
+        } catch (e) { toast('Chyba registrace: ' + e.message, 'error'); }
+    };
+    document.getElementById('googleLoginBtn').onclick = async () => {
+        try { await signInWithPopup(auth, googleProvider); closeM('authModal'); toast('Google přihlášení úspěšné!', 'success'); }
+        catch (e) { toast('Chyba Google: ' + e.message, 'error'); }
+    };
     document.getElementById('btnLogout').onclick = () => { signOut(auth); location.reload(); };
     document.getElementById('btnChangeNick').onclick = () => { document.getElementById('newNickInput').value = auth.currentUser?.displayName || ''; openM('nickModal'); closeDD(); };
-    document.getElementById('saveNickBtn').onclick = async () => { const nick = document.getElementById('newNickInput').value.trim(); if (nick) { await updateProfile(auth.currentUser, { displayName: nick }); toast('Nick změněn!', 'success'); closeM('nickModal'); location.reload(); } };
-    document.getElementById('btnAdminMode').onclick = () => { isAdminMode = !isAdminMode; document.getElementById('btnAdminMode').innerText = isAdminMode ? '🛠️ Admin mód: ON' : '🛠️ Admin mód: OFF'; document.getElementById('addGameBtn').classList.toggle('hidden', !isAdminMode); closeDD(); render(); };
+    document.getElementById('saveNickBtn').onclick = async () => {
+        const nick = document.getElementById('newNickInput').value.trim();
+        if (nick) { await updateProfile(auth.currentUser, { displayName: nick }); toast('Nick změněn!', 'success'); closeM('nickModal'); location.reload(); }
+    };
+    document.getElementById('btnAdminMode').onclick = () => {
+        isAdminMode = !isAdminMode;
+        document.getElementById('btnAdminMode').innerText = isAdminMode ? '🛠️ Admin mód: ON' : '🛠️ Admin mód: OFF';
+        document.getElementById('addGameBtn').classList.toggle('hidden', !isAdminMode);
+        closeDD(); render();
+    };
 
-    window.prepareAddGame = () => { document.getElementById('editGameId').value = ""; document.getElementById('gameTitle').value = ""; document.getElementById('gameEmoji').value = ""; document.getElementById('gameHtml').value = ""; document.getElementById('gameIsMobile').checked = false; document.getElementById('gameMaxPlayers').value = 2; document.getElementById('gameModalTitle').innerText = "Nová hra"; openM('gameModal'); };
-    function editGame(id) { const g = allGames.find(x => x.id === id); if (!g) return; document.getElementById('editGameId').value = g.id; document.getElementById('gameTitle').value = g.title; document.getElementById('gameEmoji').value = g.emoji; document.getElementById('gameHtml').value = g.html; document.getElementById('gameIsMobile').checked = g.isMobile || false; document.getElementById('gameMaxPlayers').value = g.maxPlayers || 2; document.getElementById('gameModalTitle').innerText = "Upravit hru"; openM('gameModal'); }
+    // ─── Správa her (admin) ───────────────────────────────────────
+    window.prepareAddGame = () => {
+        document.getElementById('editGameId').value = ""; document.getElementById('gameTitle').value = "";
+        document.getElementById('gameEmoji').value = ""; document.getElementById('gameHtml').value = "";
+        document.getElementById('gameIsMobile').checked = false; document.getElementById('gameMaxPlayers').value = 2;
+        document.getElementById('gameModalTitle').innerText = "Nová hra"; openM('gameModal');
+    };
+    function editGame(id) {
+        const g = allGames.find(x => x.id === id); if (!g) return;
+        document.getElementById('editGameId').value = g.id; document.getElementById('gameTitle').value = g.title;
+        document.getElementById('gameEmoji').value = g.emoji; document.getElementById('gameHtml').value = g.html;
+        document.getElementById('gameIsMobile').checked = g.isMobile || false; document.getElementById('gameMaxPlayers').value = g.maxPlayers || 2;
+        document.getElementById('gameModalTitle').innerText = "Upravit hru"; openM('gameModal');
+    }
     async function deleteGame(id) { if (confirm("Opravdu smazat?")) { await deleteDoc(doc(db, "games", id)); toast('Hra smazána.', 'info'); } }
-    document.getElementById('saveGameBtn').onclick = async () => { try { const id = document.getElementById('editGameId').value; const data = { title: document.getElementById('gameTitle').value, emoji: document.getElementById('gameEmoji').value, html: document.getElementById('gameHtml').value, isMobile: document.getElementById('gameIsMobile').checked, maxPlayers: parseInt(document.getElementById('gameMaxPlayers').value) || 2 }; if (id) { await updateDoc(doc(db, "games", id), data); toast('Aktualizováno!', 'success'); } else { data.createdAt = new Date(); await addDoc(collection(db, "games"), data); toast('Hra přidána!', 'success'); } closeM('gameModal'); } catch (e) { toast('Chyba: ' + e.message, 'error'); } };
+    document.getElementById('saveGameBtn').onclick = async () => {
+        try {
+            const id = document.getElementById('editGameId').value;
+            const data = { title: document.getElementById('gameTitle').value, emoji: document.getElementById('gameEmoji').value, html: document.getElementById('gameHtml').value, isMobile: document.getElementById('gameIsMobile').checked, maxPlayers: parseInt(document.getElementById('gameMaxPlayers').value) || 2 };
+            if (id) { await updateDoc(doc(db, "games", id), data); toast('Aktualizováno!', 'success'); }
+            else { data.createdAt = new Date(); await addDoc(collection(db, "games"), data); toast('Hra přidána!', 'success'); }
+            closeM('gameModal');
+        } catch (e) { toast('Chyba: ' + e.message, 'error'); }
+    };
 
-    onSnapshot(query(collection(db, "games"), orderBy("createdAt", "desc")), (snap) => { allGames = []; snap.forEach(d => allGames.push({ id: d.id, ...d.data() })); if (!isGameRunning) render(); });
+    onSnapshot(query(collection(db, "games"), orderBy("createdAt", "desc")), (snap) => {
+        allGames = []; snap.forEach(d => allGames.push({ id: d.id, ...d.data() }));
+        if (!isGameRunning) render();
+    });
 
     function render() {
         const grid = document.getElementById('gameGrid'); grid.innerHTML = '';
         if (allGames.length === 0) { grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎮</div><p>Zatím žádné hry.</p></div>`; return; }
         allGames.forEach(g => {
-            const card = document.createElement('div'); card.className = 'game-card'; const mobileBadge = g.isMobile ? '<span class="game-badge">📱 Mobil</span>' : ''; const playersBadge = `<span class="game-badge">👥 max ${g.maxPlayers || 2}</span>`;
+            const card = document.createElement('div'); card.className = 'game-card';
+            const mobileBadge = g.isMobile ? '<span class="game-badge">📱 Mobil</span>' : '';
+            const playersBadge = `<span class="game-badge">👥 max ${g.maxPlayers || 2}</span>`;
             card.innerHTML = `<div class="game-emoji">${g.emoji}</div><div class="game-title">${g.title}</div>${mobileBadge}${playersBadge}${isAdminMode ? '<div class="admin-actions"></div>' : ''}`;
             if (isAdminMode) {
                 const ad = card.querySelector('.admin-actions');
@@ -344,17 +451,27 @@
         });
     }
 
-    window.setVis = (v) => { selectedVisibility = v; document.getElementById('visPublicBtn').classList.toggle('active', v === 'public'); document.getElementById('visPrivateBtn').classList.toggle('active', v === 'private'); document.getElementById('publicRoomsSection').classList.toggle('hidden', v === 'private'); };
+    // ─── Viditelnost místnosti ────────────────────────────────────
+    window.setVis = (v) => {
+        selectedVisibility = v;
+        document.getElementById('visPublicBtn').classList.toggle('active', v === 'public');
+        document.getElementById('visPrivateBtn').classList.toggle('active', v === 'private');
+        document.getElementById('publicRoomsSection').classList.toggle('hidden', v === 'private');
+    };
 
+    // ─── Explore ──────────────────────────────────────────────────
     window.openExplore = () => {
-        if (!auth.currentUser) { openM('authModal'); return; } openM('exploreModal');
-        const listEl = document.getElementById('allPublicRoomsList'); listEl.innerHTML = '<div class="pub-room-empty">Načítání...</div>';
+        if (!auth.currentUser) { openM('authModal'); return; }
+        openM('exploreModal');
+        const listEl = document.getElementById('allPublicRoomsList');
+        listEl.innerHTML = '<div class="pub-room-empty">Načítání...</div>';
         if (exploreUnsub) { exploreUnsub(); exploreUnsub = null; }
-        exploreUnsub = onSnapshot(query(collection(db, "rooms"), where("visibility", "==", "public"), where("status", "==", "waiting")), (snap) => {
+        exploreUnsub = onSnapshot(query(collection(db, "rooms"), where("visibility", "==", "public"), where("status", "in", ["waiting", "playing"])), (snap) => {
             const rooms = [];
             snap.forEach(d => {
-                const rd = d.data(); const activePlayers = (rd.players || []).filter(p => !p.ghost);
-                if (activePlayers.length > 0 && activePlayers.length < (rd.maxPlayers || 2)) { rooms.push({ id: d.id, ...rd, activePlayers }); }
+                const rd = d.data();
+                const activePlayers = (rd.players || []).filter(p => !p.ghost && !p.abandoned);
+                if (rd.status === "waiting" && activePlayers.length > 0 && activePlayers.length < (rd.maxPlayers || 2)) rooms.push({ id: d.id, ...rd, activePlayers });
             });
             listEl.innerHTML = '';
             if (rooms.length === 0) { listEl.innerHTML = '<div class="pub-room-empty">Momentálně nikdo nehledá spoluhráče. Zkus nějakou hru založit!</div>'; return; }
@@ -367,16 +484,22 @@
         });
     };
 
+    // ─── Lobby ────────────────────────────────────────────────────
     window.openLobby = (gameId) => {
         if (!auth.currentUser) { openM('authModal'); return; }
         const g = allGames.find(x => x.id === gameId); if (!g) return;
         window.selectedGameId = g.id; window.selectedGameHtml = g.html; window.selectedGameMax = g.maxPlayers || 2; window.selectedGameTitle = g.title;
-        document.getElementById('lobbyTitle').innerText = g.title; document.getElementById('lobbyInitialView').classList.remove('hidden'); document.getElementById('lobbyWaitingView').classList.add('hidden'); document.getElementById('roomCodeInput').value = ""; setVis('public'); openM('lobbyModal'); loadPublicRooms(g.id);
+        document.getElementById('lobbyTitle').innerText = g.title;
+        document.getElementById('lobbyInitialView').classList.remove('hidden');
+        document.getElementById('lobbyWaitingView').classList.add('hidden');
+        document.getElementById('roomCodeInput').value = "";
+        setVis('public'); openM('lobbyModal'); loadPublicRooms(g.id);
     };
 
     function loadPublicRooms(gameId) {
         if (publicRoomsUnsub) { publicRoomsUnsub(); publicRoomsUnsub = null; }
-        const listEl = document.getElementById('publicRoomsList'); listEl.innerHTML = '<div class="pub-room-empty">Načítání...</div>';
+        const listEl = document.getElementById('publicRoomsList');
+        listEl.innerHTML = '<div class="pub-room-empty">Načítání...</div>';
         publicRoomsUnsub = onSnapshot(query(collection(db, "rooms"), where("gameId", "==", gameId), where("visibility", "==", "public"), where("status", "==", "waiting")), (snap) => {
             const rooms = [];
             snap.forEach(d => { const rd = d.data(); const activePlayers = (rd.players || []).filter(p => !p.ghost); if (activePlayers.length > 0 && activePlayers.length < (rd.maxPlayers || 2)) rooms.push({ id: d.id, ...rd, activePlayers }); });
@@ -385,19 +508,24 @@
             rooms.forEach(r => {
                 const div = document.createElement('div'); div.className = 'pub-room-item';
                 div.innerHTML = `<div class="pub-room-left"><div class="pub-room-host">🏠 ${r.hostName || '?'}</div><div class="pub-room-meta">Kód: ${r.id}</div></div><div class="pub-room-count">${r.activePlayers.length}/${r.maxPlayers || 2} hráčů</div>`;
-                div.onclick = () => joinRoom(r.id); listEl.appendChild(div);
+                div.onclick = () => joinRoom(r.id);
+                listEl.appendChild(div);
             });
         });
     }
 
-    // Nová funkce pro čistý návrat ze hry do lobby u klienta
+    // ─── Čistý lokální reset ──────────────────────────────────────
     function forceCloseLocal() {
-        stopHeartbeat(); isGameRunning = false;
+        stopHeartbeat();
+        isGameRunning = false;
         if (roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; }
         document.getElementById('gameOverlay').style.display = 'none';
         document.getElementById('gameFrame').srcdoc = '';
-        closeM('lobbyModal'); currentRoomId = '';
+        closeM('lobbyModal');
+        currentRoomId = '';
         window.selectedGameId = null; window.selectedGameHtml = null; window.selectedGameMax = null; window.selectedGameTitle = null;
+        localStorage.removeItem(LS_ROOM);
+        hideRejoinBanner();
         render();
     }
 
@@ -407,15 +535,35 @@
         else { if (publicRoomsUnsub) { publicRoomsUnsub(); publicRoomsUnsub = null; } closeM('lobbyModal'); }
     };
 
+    // ─── Heartbeat ────────────────────────────────────────────────
     async function startHeartbeat(roomId) {
         stopHeartbeat();
-        async function beat() { try { const ref = doc(db, "rooms", roomId); const snap = await getDoc(ref); if (!snap.exists()) return; const players = (snap.data().players || []).map(p => p.uid === auth.currentUser.uid ? { ...p, lastSeen: Date.now(), ghost: false } : p); await updateDoc(ref, { players }); } catch (_) {} }
-        await beat(); heartbeatInterval = setInterval(beat, HEARTBEAT_MS);
+        async function beat() {
+            try {
+                const ref = doc(db, "rooms", roomId);
+                const snap = await getDoc(ref);
+                if (!snap.exists()) return;
+                const players = (snap.data().players || []).map(p =>
+                    p.uid === auth.currentUser.uid ? { ...p, lastSeen: Date.now(), ghost: false } : p
+                );
+                await updateDoc(ref, { players });
+            } catch (_) {}
+        }
+        await beat();
+        heartbeatInterval = setInterval(beat, HEARTBEAT_MS);
     }
     function stopHeartbeat() { if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; } }
-    function reconcilePlayers(players) { const now = Date.now(); return players.map(p => { if (!p.lastSeen) return p; const isGhost = (now - p.lastSeen) > GHOST_TIMEOUT; return { ...p, ghost: isGhost }; }); }
 
-    // Kicknutí hráče - odebírá ho z databáze místnosti
+    function reconcilePlayers(players) {
+        const now = Date.now();
+        return players.map(p => {
+            if (!p.lastSeen) return p;
+            const isGhost = (now - p.lastSeen) > GHOST_TIMEOUT;
+            return { ...p, ghost: isGhost };
+        });
+    }
+
+    // ─── Kick hráče ───────────────────────────────────────────────
     window.kickPlayer = async (uid) => {
         if (!currentRoomId) return;
         try {
@@ -423,111 +571,390 @@
             const s = await getDoc(ref);
             if (s.exists()) {
                 let players = s.data().players || [];
-                players = players.filter(p => p.uid !== uid); // Odstraní hráče z pole
+                players = players.filter(p => p.uid !== uid);
                 await updateDoc(ref, { players });
                 toast('Hráč byl vyhozen.', 'success');
             }
-        } catch(e) {
-            toast('Chyba při vyhazování: ' + e.message, 'error');
-        }
+        } catch(e) { toast('Chyba při vyhazování: ' + e.message, 'error'); }
     };
 
+    // ─── Abandon hráče – majetek propadá ──────────────────────────
+    // Zavolá se pokud hráč je ghost příliš dlouho během hry
+    // Nastaví ho jako abandoned=true a zapíše abandondAt timestamp.
+    // Samotná hra si přečte window.ABANDONED_UID a zpracuje ho.
+    async function abandonPlayer(roomId, uid) {
+        try {
+            const ref = doc(db, "rooms", roomId);
+            const s = await getDoc(ref);
+            if (!s.exists()) return;
+            const data = s.data();
+            if (data.status !== "playing") return;
+            const players = (data.players || []).map(p =>
+                p.uid === uid ? { ...p, abandoned: true, ghost: true, abandonedAt: Date.now() } : p
+            );
+            // Zapiš seznam opuštěných hráčů do samostatného pole pro iframe
+            const abandonedUids = [...(data.abandonedUids || [])];
+            if (!abandonedUids.includes(uid)) abandonedUids.push(uid);
+            await updateDoc(ref, { players, abandonedUids });
+        } catch (_) {}
+    }
+
+    // ─── REJOIN logika ────────────────────────────────────────────
+    // Po načtení stránky zkontrolujeme, jestli hráč byl ve hře
+    async function checkForRejoin() {
+        if (!auth.currentUser) return;
+        const saved = localStorage.getItem(LS_ROOM);
+        if (!saved) return;
+        try {
+            const ref = doc(db, "rooms", saved);
+            const s = await getDoc(ref);
+            if (!s.exists()) { localStorage.removeItem(LS_ROOM); return; }
+            const data = s.data();
+            // Místnost stále existuje, hráč v ní je (jako ghost nebo aktivní)
+            const meInRoom = (data.players || []).find(p => p.uid === auth.currentUser.uid);
+            if (!meInRoom) { localStorage.removeItem(LS_ROOM); return; }
+            // Hráč je opuštěný – nelze se vrátit
+            if (meInRoom.abandoned) { localStorage.removeItem(LS_ROOM); return; }
+            // Místnost je uzavřená
+            if (data.status === "closed") { localStorage.removeItem(LS_ROOM); return; }
+            // Vše OK – zobraz banner
+            rejoinRoomId = saved;
+            document.getElementById('rejoinGameTitle').textContent = data.gameTitle || 'neznámé hře';
+            showRejoinBanner();
+        } catch (_) { localStorage.removeItem(LS_ROOM); }
+    }
+
+    function showRejoinBanner() { document.getElementById('rejoinBanner').classList.add('show'); }
+    function hideRejoinBanner() { document.getElementById('rejoinBanner').classList.remove('show'); }
+
+    window.doRejoin = async () => {
+        hideRejoinBanner();
+        if (!rejoinRoomId) return;
+        await rejoinRoom(rejoinRoomId);
+    };
+
+    window.dismissRejoin = async () => {
+        hideRejoinBanner();
+        // Označíme hráče jako ghost (opuštěný) v místnosti
+        if (rejoinRoomId && auth.currentUser) {
+            try {
+                const ref = doc(db, "rooms", rejoinRoomId);
+                const s = await getDoc(ref);
+                if (s.exists()) {
+                    const data = s.data();
+                    const players = (data.players || []).map(p =>
+                        p.uid === auth.currentUser.uid ? { ...p, ghost: true, lastSeen: 0 } : p
+                    );
+                    await updateDoc(ref, { players });
+                    // Pokud hra běží a stále dost hráčů, mark as abandoned
+                    if (data.status === "playing") {
+                        await abandonPlayer(rejoinRoomId, auth.currentUser.uid);
+                    }
+                }
+            } catch (_) {}
+        }
+        localStorage.removeItem(LS_ROOM);
+        rejoinRoomId = null;
+    };
+
+    // Rejoin do rozehrané nebo čekající hry
+    async function rejoinRoom(code) {
+        if (!auth.currentUser) { openM('authModal'); return; }
+        const ref = doc(db, "rooms", code);
+        const s = await getDoc(ref);
+        if (!s.exists()) { toast('Místnost neexistuje.', 'error'); localStorage.removeItem(LS_ROOM); return; }
+        const rd = s.data();
+        if (rd.status === "closed") { toast('Hra skončila.', 'info'); localStorage.removeItem(LS_ROOM); return; }
+
+        // Načti herní data
+        if (rd.gameId) {
+            const g = allGames.find(x => x.id === rd.gameId);
+            if (g) { window.selectedGameId = g.id; window.selectedGameHtml = g.html; window.selectedGameMax = g.maxPlayers || 2; window.selectedGameTitle = g.title; }
+            else {
+                try {
+                    const gSnap = await getDoc(doc(db, "games", rd.gameId));
+                    if (gSnap.exists()) { const gd = gSnap.data(); window.selectedGameId = rd.gameId; window.selectedGameHtml = gd.html; window.selectedGameMax = gd.maxPlayers || 2; window.selectedGameTitle = gd.title || rd.gameTitle || 'Hra'; }
+                } catch (_) {}
+            }
+        }
+        if (!window.selectedGameHtml) { toast('Nepodařilo se načíst hru.', 'error'); return; }
+
+        currentRoomId = code;
+        const me = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Hráč", isHost: rd.hostId === auth.currentUser.uid, lastSeen: Date.now(), ghost: false };
+        let players = (rd.players || []);
+        const existingIdx = players.findIndex(p => p.uid === auth.currentUser.uid);
+        if (existingIdx >= 0) players[existingIdx] = { ...players[existingIdx], ...me, ghost: false, abandoned: false };
+        else players = [...players, me];
+        await updateDoc(ref, { players });
+
+        localStorage.setItem(LS_ROOM, code);
+        await startHeartbeat(code);
+
+        if (rd.status === "playing") {
+            // Rovnou do hry bez odpočtu
+            toast('Vrátil ses do hry! 🎮', 'success');
+            const amIHost = rd.hostId === auth.currentUser.uid;
+            const activePlayers = players.filter(p => !p.ghost && !p.abandoned);
+            isGameRunning = true;
+            const injection = `<script>window.ROOM_ID="${code}";window.IS_HOST=${amIHost};window.MY_UID="${auth.currentUser.uid}";window.PLAYERS=${JSON.stringify(activePlayers)};window.IS_REJOIN=true;window.ABANDONED_UIDS=${JSON.stringify(rd.abandonedUids || [])};<\/script>`;
+            const frame = document.getElementById('gameFrame');
+            frame.srcdoc = injection + window.selectedGameHtml;
+            document.getElementById('gameOverlay').style.display = 'block';
+            // Nastartuj poslouchání místnosti (pro abandon detection)
+            listenRoomDuringGame(code, amIHost);
+        } else {
+            // Ještě v lobby / waiting
+            if (!document.getElementById('lobbyModal').classList.contains('open')) {
+                document.getElementById('lobbyTitle').innerText = window.selectedGameTitle || 'Hra';
+                document.getElementById('lobbyInitialView').classList.remove('hidden');
+                document.getElementById('lobbyWaitingView').classList.add('hidden');
+                openM('lobbyModal');
+            }
+            const amIHost = rd.hostId === auth.currentUser.uid;
+            enterWaitingRoom(code, amIHost);
+        }
+    }
+
+    // ─── Vytvořit místnost ────────────────────────────────────────
     document.getElementById('createRoomBtn').onclick = async () => {
         if (!auth.currentUser) { openM('authModal'); return; }
-        const code = Math.random().toString(36).substring(2, 7).toUpperCase(); currentRoomId = code;
+        const code = Math.random().toString(36).substring(2, 7).toUpperCase();
+        currentRoomId = code;
         const me = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Hráč", isHost: true, lastSeen: Date.now(), ghost: false };
-        await setDoc(doc(db, "rooms", code), { status: "waiting", visibility: selectedVisibility, gameId: window.selectedGameId || "", gameTitle: window.selectedGameTitle || "", players: [me], hostId: me.uid, hostName: me.name, maxPlayers: window.selectedGameMax || 2 });
+        await setDoc(doc(db, "rooms", code), {
+            status: "waiting", visibility: selectedVisibility, gameId: window.selectedGameId || "",
+            gameTitle: window.selectedGameTitle || "", players: [me], hostId: me.uid, hostName: me.name,
+            maxPlayers: window.selectedGameMax || 2, abandonedUids: []
+        });
         if (publicRoomsUnsub) { publicRoomsUnsub(); publicRoomsUnsub = null; }
-        await startHeartbeat(code); enterWaitingRoom(code, true);
+        localStorage.setItem(LS_ROOM, code);
+        await startHeartbeat(code);
+        enterWaitingRoom(code, true);
     };
 
-    document.getElementById('joinRoomBtn').onclick = async () => { const code = document.getElementById('roomCodeInput').value.toUpperCase().trim(); if (!code) return toast('Zadejte kód místnosti.', 'error'); await joinRoom(code); };
-    window.quickJoin = async () => { if (!auth.currentUser) { openM('authModal'); return; } const code = document.getElementById('quickCodeInput').value.toUpperCase().trim(); if (!code) return toast('Zadejte kód místnosti.', 'error'); await joinRoom(code); };
+    // ─── Připojit se ke kódu ──────────────────────────────────────
+    document.getElementById('joinRoomBtn').onclick = async () => {
+        const code = document.getElementById('roomCodeInput').value.toUpperCase().trim();
+        if (!code) return toast('Zadejte kód místnosti.', 'error');
+        await joinRoom(code);
+    };
+    window.quickJoin = async () => {
+        if (!auth.currentUser) { openM('authModal'); return; }
+        const code = document.getElementById('quickCodeInput').value.toUpperCase().trim();
+        if (!code) return toast('Zadejte kód místnosti.', 'error');
+        await joinRoom(code);
+    };
     document.getElementById('quickCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') window.quickJoin(); });
 
     async function joinRoom(code) {
         if (!auth.currentUser) { openM('authModal'); return; }
-        const ref = doc(db, "rooms", code); const s = await getDoc(ref); if (!s.exists()) return toast('Místnost neexistuje.', 'error'); const rd = s.data();
-        if (rd.status !== "waiting") return toast('Hra již probíhá nebo skončila.', 'error');
-        const activePlayers = (rd.players || []).filter(p => !p.ghost);
+        const ref = doc(db, "rooms", code);
+        const s = await getDoc(ref);
+        if (!s.exists()) return toast('Místnost neexistuje.', 'error');
+        const rd = s.data();
+        if (rd.status === "closed") return toast('Hra již skončila.', 'error');
+        // Hráč je již v místnosti? Rejoin!
+        const meInRoom = (rd.players || []).find(p => p.uid === auth.currentUser.uid);
+        if (meInRoom && !meInRoom.abandoned) { return await rejoinRoom(code); }
+        if (rd.status !== "waiting") return toast('Hra již probíhá.', 'error');
+        const activePlayers = (rd.players || []).filter(p => !p.ghost && !p.abandoned);
         if (activePlayers.length >= (rd.maxPlayers || 2)) return toast(`Místnost je plná! (max ${rd.maxPlayers || 2})`, 'error');
-        if (activePlayers.some(p => p.uid === auth.currentUser.uid)) return toast('Již jsi v této místnosti.', 'info');
+
+        // Načti herní data
         if (rd.gameId) {
             const g = allGames.find(x => x.id === rd.gameId);
             if (g) { window.selectedGameId = g.id; window.selectedGameHtml = g.html; window.selectedGameMax = g.maxPlayers || 2; window.selectedGameTitle = g.title; }
-            else { try { const gSnap = await getDoc(doc(db, "games", rd.gameId)); if (gSnap.exists()) { const gd = gSnap.data(); window.selectedGameId = rd.gameId; window.selectedGameHtml = gd.html; window.selectedGameMax = gd.maxPlayers || 2; window.selectedGameTitle = gd.title || rd.gameTitle || 'Hra'; } } catch (_) {} }
+            else {
+                try {
+                    const gSnap = await getDoc(doc(db, "games", rd.gameId));
+                    if (gSnap.exists()) { const gd = gSnap.data(); window.selectedGameId = rd.gameId; window.selectedGameHtml = gd.html; window.selectedGameMax = gd.maxPlayers || 2; window.selectedGameTitle = gd.title || rd.gameTitle || 'Hra'; }
+                } catch (_) {}
+            }
         }
         if (!window.selectedGameHtml) return toast('Nepodařilo se načíst hru pro tuto místnost.', 'error');
-        currentRoomId = code; const me = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Hráč", isHost: false, lastSeen: Date.now(), ghost: false };
-        let players = (rd.players || []); const existingIdx = players.findIndex(p => p.uid === auth.currentUser.uid);
+        currentRoomId = code;
+        const me = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Hráč", isHost: false, lastSeen: Date.now(), ghost: false };
+        let players = (rd.players || []);
+        const existingIdx = players.findIndex(p => p.uid === auth.currentUser.uid);
         if (existingIdx >= 0) players[existingIdx] = me; else players = [...players, me];
         await updateDoc(ref, { players });
-        if (!document.getElementById('lobbyModal').classList.contains('open')) { document.getElementById('lobbyTitle').innerText = window.selectedGameTitle || 'Hra'; document.getElementById('lobbyInitialView').classList.remove('hidden'); document.getElementById('lobbyWaitingView').classList.add('hidden'); openM('lobbyModal'); }
+        if (!document.getElementById('lobbyModal').classList.contains('open')) {
+            document.getElementById('lobbyTitle').innerText = window.selectedGameTitle || 'Hra';
+            document.getElementById('lobbyInitialView').classList.remove('hidden');
+            document.getElementById('lobbyWaitingView').classList.add('hidden');
+            openM('lobbyModal');
+        }
         if (publicRoomsUnsub) { publicRoomsUnsub(); publicRoomsUnsub = null; }
-        await startHeartbeat(code); enterWaitingRoom(code, false);
+        localStorage.setItem(LS_ROOM, code);
+        await startHeartbeat(code);
+        enterWaitingRoom(code, false);
     }
 
+    // ─── Waiting room ─────────────────────────────────────────────
     function enterWaitingRoom(code, amIHost) {
-        document.getElementById('lobbyInitialView').classList.add('hidden'); document.getElementById('lobbyWaitingView').classList.remove('hidden'); document.getElementById('displayCode').childNodes[0].textContent = code; document.getElementById('hostStartGameBtn').classList.toggle('hidden', !amIHost); document.getElementById('guestWaitingMsg').classList.toggle('hidden', amIHost);
+        document.getElementById('lobbyInitialView').classList.add('hidden');
+        document.getElementById('lobbyWaitingView').classList.remove('hidden');
+        document.getElementById('displayCode').childNodes[0].textContent = code;
+        document.getElementById('hostStartGameBtn').classList.toggle('hidden', !amIHost);
+        document.getElementById('guestWaitingMsg').classList.toggle('hidden', amIHost);
         if (roomStatusUnsub) roomStatusUnsub();
         roomStatusUnsub = onSnapshot(doc(db, "rooms", code), async (s) => {
             const d = s.data(); if (!d) return;
-
             if (d.status === "closed") { toast('Hra/místnost byla ukončena.', 'info'); forceCloseLocal(); return; }
-
             let players = reconcilePlayers(d.players || []);
-            
-            // Kontrola vyhození (pokud tě hostitel odstranil ze seznamu)
             const amIStillHere = players.some(p => p.uid === auth.currentUser.uid);
             if (!amIStillHere) { toast('Byl jsi vyhozen z místnosti.', 'error'); forceCloseLocal(); return; }
-
             const hasChanges = players.some((p, i) => p.ghost !== (d.players[i]?.ghost));
             if (hasChanges && amIHost) { try { await updateDoc(doc(db, "rooms", code), { players }); } catch (_) {} }
             myCurrentRoomData = { ...d, players };
-
-            const max = d.maxPlayers || 2; const active = players.filter(p => !p.ghost);
+            const max = d.maxPlayers || 2;
+            const active = players.filter(p => !p.ghost);
             document.getElementById('playerCountDisplay').innerText = `${active.length}/${max}`;
-            const vis = d.visibility === 'public' ? '🌐 Veřejná místnost' : '🔒 Soukromá místnost'; document.getElementById('roomVisibilityBadge').innerText = vis;
-
+            const vis = d.visibility === 'public' ? '🌐 Veřejná místnost' : '🔒 Soukromá místnost';
+            document.getElementById('roomVisibilityBadge').innerText = vis;
             const list = document.getElementById('connectedPlayersList'); list.innerHTML = '';
             players.forEach(p => {
                 const isMe = p.uid === auth.currentUser.uid;
                 const kickBtn = (amIHost && !isMe) ? `<button class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; height:fit-content;" onclick="kickPlayer('${p.uid}')">Vyhodit</button>` : '';
-
                 list.innerHTML += `<div class="player-item">
                     <div class="player-item-left"><div class="player-dot ${p.ghost ? 'ghost' : ''}"></div><span style="font-size:0.88rem;font-weight:500;${p.ghost ? 'color:var(--text3)' : ''}">${p.name}</span></div>
                     <div style="display:flex;gap:6px;align-items:center;">${p.isHost ? '<span class="host-tag">Hostitel</span>' : ''}${p.ghost ? '<span class="ghost-tag">Odpojen</span>' : ''}${kickBtn}</div>
                 </div>`;
             });
-
             if (d.status === "playing" && !isGameRunning && !document.getElementById('countdownOverlay').classList.contains('open')) {
-                stopHeartbeat(); startCountdown(amIHost, players.filter(p => !p.ghost));
+                stopHeartbeat();
+                startCountdown(amIHost, players.filter(p => !p.ghost));
             }
         });
     }
 
+    // ─── Leave room ───────────────────────────────────────────────
     async function leaveRoom() {
         stopHeartbeat();
         if (currentRoomId && auth.currentUser) {
-            try { const ref = doc(db, "rooms", currentRoomId); const s = await getDoc(ref); if (s.exists()) { const players = (s.data().players || []).map(p => p.uid === auth.currentUser.uid ? { ...p, ghost: true, lastSeen: 0 } : p); await updateDoc(ref, { players }); } } catch (_) {}
+            try {
+                const ref = doc(db, "rooms", currentRoomId);
+                const s = await getDoc(ref);
+                if (s.exists()) {
+                    const players = (s.data().players || []).map(p =>
+                        p.uid === auth.currentUser.uid ? { ...p, ghost: true, lastSeen: 0 } : p
+                    );
+                    await updateDoc(ref, { players });
+                }
+            } catch (_) {}
         }
         forceCloseLocal();
     }
 
-    window.copyCode = () => { const code = document.getElementById('displayCode').childNodes[0].textContent.trim(); navigator.clipboard.writeText(code).then(() => toast('Kód zkopírován!', 'success')); };
+    // ─── Poslouchat místnost BĚHEM HRY (pro abandon detection) ────
+    function listenRoomDuringGame(roomId, amIHost) {
+        if (roomStatusUnsub) roomStatusUnsub();
+        let abandonTimers = {};
+        roomStatusUnsub = onSnapshot(doc(db, "rooms", roomId), async (s) => {
+            const d = s.data(); if (!d) return;
+            if (d.status === "closed") { toast('Hra byla ukončena.', 'info'); forceCloseLocal(); return; }
+            const amIStillHere = (d.players || []).some(p => p.uid === auth.currentUser.uid && !p.abandoned);
+            if (!amIStillHere) { toast('Byl jsi odpojen ze hry.', 'error'); forceCloseLocal(); return; }
+            // Ghost detection → abandon timer
+            const now = Date.now();
+            (d.players || []).forEach(p => {
+                if (p.ghost && !p.abandoned && p.uid !== auth.currentUser.uid) {
+                    if (!abandonTimers[p.uid]) {
+                        abandonTimers[p.uid] = setTimeout(async () => {
+                            await abandonPlayer(roomId, p.uid);
+                            delete abandonTimers[p.uid];
+                        }, ABANDON_TIMEOUT);
+                    }
+                } else if (!p.ghost || p.abandoned) {
+                    if (abandonTimers[p.uid]) { clearTimeout(abandonTimers[p.uid]); delete abandonTimers[p.uid]; }
+                }
+            });
+            // Aktualizuj abandonment v iframe přes postMessage
+            if (d.abandonedUids && d.abandonedUids.length > 0) {
+                try {
+                    document.getElementById('gameFrame').contentWindow.postMessage({
+                        type: 'GH_ABANDONED', abandonedUids: d.abandonedUids
+                    }, '*');
+                } catch (_) {}
+            }
+        });
+    }
 
-    document.getElementById('hostStartGameBtn').onclick = async () => { const active = (myCurrentRoomData?.players || []).filter(p => !p.ghost); if (active.length < 2) return toast('Musíte být alespoň dva aktivní hráči!', 'error'); await updateDoc(doc(db, "rooms", currentRoomId), { status: "playing" }); };
+    window.copyCode = () => {
+        const code = document.getElementById('displayCode').childNodes[0].textContent.trim();
+        navigator.clipboard.writeText(code).then(() => toast('Kód zkopírován!', 'success'));
+    };
 
-    function startCountdown(isHost, playersArray) { const overlay = document.getElementById('countdownOverlay'); const numEl = document.getElementById('countdownNum'); overlay.classList.add('open'); let n = 3; numEl.textContent = n; const iv = setInterval(() => { n--; if (n <= 0) { clearInterval(iv); overlay.classList.remove('open'); launch(isHost, playersArray); } else { numEl.style.animation = 'none'; numEl.offsetHeight; numEl.style.animation = ''; numEl.textContent = n; } }, 900); }
+    document.getElementById('hostStartGameBtn').onclick = async () => {
+        const active = (myCurrentRoomData?.players || []).filter(p => !p.ghost);
+        if (active.length < 2) return toast('Musíte být alespoň dva aktivní hráči!', 'error');
+        await updateDoc(doc(db, "rooms", currentRoomId), { status: "playing" });
+    };
 
-    function launch(isHost, playersArray) { isGameRunning = true; closeM('lobbyModal'); const injection = `<script>window.ROOM_ID="${currentRoomId}";window.IS_HOST=${isHost};window.MY_UID="${auth.currentUser.uid}";window.PLAYERS=${JSON.stringify(playersArray)};<\/script>`; const frame = document.getElementById('gameFrame'); frame.srcdoc = injection + window.selectedGameHtml; document.getElementById('gameOverlay').style.display = 'block'; }
+    // ─── Odpočet ──────────────────────────────────────────────────
+    function startCountdown(isHost, playersArray) {
+        const overlay = document.getElementById('countdownOverlay');
+        const numEl = document.getElementById('countdownNum');
+        overlay.classList.add('open'); let n = 3; numEl.textContent = n;
+        const iv = setInterval(() => {
+            n--;
+            if (n <= 0) { clearInterval(iv); overlay.classList.remove('open'); launch(isHost, playersArray); }
+            else { numEl.style.animation = 'none'; numEl.offsetHeight; numEl.style.animation = ''; numEl.textContent = n; }
+        }, 900);
+    }
 
+    // ─── Spuštění hry ─────────────────────────────────────────────
+    function launch(isHost, playersArray) {
+        isGameRunning = true;
+        closeM('lobbyModal');
+        localStorage.setItem(LS_ROOM, currentRoomId);
+        const injection = `<script>
+            window.ROOM_ID="${currentRoomId}";
+            window.IS_HOST=${isHost};
+            window.MY_UID="${auth.currentUser.uid}";
+            window.PLAYERS=${JSON.stringify(playersArray)};
+            window.IS_REJOIN=false;
+            window.ABANDONED_UIDS=[];
+            // Přijímá zprávy o abandoned hráčích z hosta
+            window.addEventListener('message', function(e){
+                if(e.data && e.data.type==='GH_ABANDONED'){
+                    window.ABANDONED_UIDS = e.data.abandonedUids;
+                    if(typeof window.onAbandonedUpdate === 'function') window.onAbandonedUpdate(e.data.abandonedUids);
+                }
+            });
+        <\/script>`;
+        const frame = document.getElementById('gameFrame');
+        frame.srcdoc = injection + window.selectedGameHtml;
+        document.getElementById('gameOverlay').style.display = 'block';
+        // Spusť poslouchání pro abandon detection
+        listenRoomDuringGame(currentRoomId, isHost);
+    }
+
+    // ─── Zavřít hru ───────────────────────────────────────────────
     window.closeGame = async () => {
-        if (currentRoomId) { try { await updateDoc(doc(db, "rooms", currentRoomId), { status: "closed" }); } catch (_) {} }
+        if (currentRoomId) {
+            try { await updateDoc(doc(db, "rooms", currentRoomId), { status: "closed" }); } catch (_) {}
+        }
         forceCloseLocal();
     };
 
-    window.addEventListener('beforeunload', () => { stopHeartbeat(); if (currentRoomId && auth.currentUser) { const ref = doc(db, "rooms", currentRoomId); getDoc(ref).then(s => { if (!s.exists()) return; const players = (s.data().players || []).map(p => p.uid === auth.currentUser.uid ? { ...p, ghost: true, lastSeen: 0 } : p); updateDoc(ref, { players }).catch(() => {}); }).catch(() => {}); } });
+    // ─── Unload handler ───────────────────────────────────────────
+    // Nastaví hráče jako ghost, ale neodstranuje ho – pro možnost rejoin
+    window.addEventListener('beforeunload', () => {
+        stopHeartbeat();
+        if (currentRoomId && auth.currentUser) {
+            const ref = doc(db, "rooms", currentRoomId);
+            getDoc(ref).then(s => {
+                if (!s.exists()) return;
+                const players = (s.data().players || []).map(p =>
+                    p.uid === auth.currentUser.uid ? { ...p, ghost: true, lastSeen: Date.now() } : p
+                );
+                // NE lastSeen: 0 – ponecháme čas, aby timer věděl kdy začít odpočítávat abandon
+                updateDoc(ref, { players }).catch(() => {});
+                // localStorage ponecháme – pro rejoin
+            }).catch(() => {});
+        }
+    });
 </script>
 </body>
 </html>
