@@ -416,7 +416,11 @@
         document.getElementById('gameIsMobile').checked = g.isMobile || false; document.getElementById('gameMaxPlayers').value = g.maxPlayers || 2;
         document.getElementById('gameModalTitle').innerText = "Upravit hru"; openM('gameModal');
     }
+    window.editGame = editGame;
+    
     async function deleteGame(id) { if (confirm("Opravdu smazat?")) { await deleteDoc(doc(db, "games", id)); toast('Hra smazána.', 'info'); } }
+    window.deleteGame = deleteGame;
+
     document.getElementById('saveGameBtn').onclick = async () => {
         try {
             const id = document.getElementById('editGameId').value;
@@ -451,6 +455,7 @@
             grid.appendChild(card);
         });
     }
+    window.render = render;
 
     // ─── Viditelnost místnosti ────────────────────────────────────
     window.setVis = (v) => {
@@ -596,6 +601,7 @@
             await updateDoc(ref, { players, abandonedUids });
         } catch (_) {}
     }
+    window.abandonPlayer = abandonPlayer;
 
     // ─── REJOIN logika ────────────────────────────────────────────
     async function checkForRejoin() {
@@ -700,6 +706,7 @@
             enterWaitingRoom(code, amIHost);
         }
     }
+    window.rejoinRoom = rejoinRoom;
 
     // ─── Vytvořit místnost ────────────────────────────────────────
     document.getElementById('createRoomBtn').onclick = async () => {
@@ -775,6 +782,7 @@
         await startHeartbeat(code);
         enterWaitingRoom(code, false);
     }
+    window.joinRoom = joinRoom;
 
     // ─── Waiting room ─────────────────────────────────────────────
     function enterWaitingRoom(code, amIHost) {
