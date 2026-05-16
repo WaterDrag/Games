@@ -95,7 +95,6 @@
         .player-dot.ghost {background:var(--text3);}
         .host-tag {font-size:0.7rem;padding:2px 8px;border-radius:50px;background:rgba(124,111,247,0.2);color:var(--accent2);font-weight:600;}
         .ghost-tag {font-size:0.7rem;padding:2px 8px;border-radius:50px;background:rgba(255,87,87,0.15);color:var(--danger);font-weight:600;}
-        .rejoin-tag {font-size:0.7rem;padding:2px 8px;border-radius:50px;background:rgba(6,214,160,0.15);color:var(--accent3);font-weight:600;}
         .abandoned-tag {font-size:0.7rem;padding:2px 8px;border-radius:50px;background:rgba(255,87,87,0.1);color:var(--text3);font-weight:600;text-decoration:line-through;}
         .count-badge {font-size:0.82rem;color:var(--text2);font-weight:600;}
         .waiting-anim {text-align:center;padding:12px;font-size:0.88rem;color:var(--accent2);font-weight:600;}
@@ -176,7 +175,6 @@
 
 <main id="gameGrid"></main>
 
-<!-- Rejoin banner – zobrazí se při obnovení stránky pokud je hráč ve hře -->
 <div id="rejoinBanner">
     <p>Byl jsi ve hře <strong id="rejoinGameTitle">?</strong>.<br>Chceš se vrátit?</p>
     <div class="btn-row">
@@ -186,7 +184,12 @@
 </div>
 
 <div id="gameOverlay">
-    <button class="btn btn-danger floating-close-btn" onclick="closeGame()">✕ Ukončit hru</button>
+    <!--
+        OPRAVA: Tlačítko "Ukončit hru" nyní volá leaveGame() místo closeGame().
+        closeGame() (které nastavovalo status:"closed" pro celou místnost) je
+        nyní vyhrazeno POUZE pro hostitele který chce úplně zrušit místnost.
+    -->
+    <button class="btn btn-danger floating-close-btn" onclick="leaveGame()">✕ Opustit hru</button>
     <div class="frame-wrapper">
         <iframe id="gameFrame" allow="autoplay"></iframe>
     </div>
@@ -298,25 +301,25 @@
     const googleProvider = new GoogleAuthProvider();
 
     // ─── Konstanty ───────────────────────────────────────────────
-    const HEARTBEAT_MS   = 15000;
-    const GHOST_TIMEOUT  = 40000;   // 40s bez heartbeatu = ghost
-    const ABANDON_TIMEOUT = 120000; // 2 min ghost ve hře = abandon
+    const HEARTBEAT_MS    = 15000;
+    const GHOST_TIMEOUT   = 40000;   // 40s bez heartbeatu = ghost
+    const ABANDON_TIMEOUT = 120000;  // 2 min ghost ve hře = abandon
 
     // ─── Stav aplikace ───────────────────────────────────────────
-    let isGameRunning   = false;
-    let isAdminMode     = false;
-    let allGames        = [];
-    let currentRoomId   = "";
-    let roomStatusUnsub = null;
+    let isGameRunning    = false;
+    let isAdminMode      = false;
+    let allGames         = [];
+    let currentRoomId    = "";
+    let amIHostGlobal    = false;   // ← uložíme roli hráče pro closeGame
+    let roomStatusUnsub  = null;
     let publicRoomsUnsub = null;
-    let exploreUnsub    = null;
+    let exploreUnsub     = null;
     let myCurrentRoomData = null;
     let selectedVisibility = 'public';
     let heartbeatInterval  = null;
-    let rejoinRoomId       = null;   // kód místnosti uložený pro rejoin
+    let rejoinRoomId       = null;
 
-    // ─── localStorage klíče ──────────────────────────────────────
-    const LS_ROOM = 'gh_last_room';  // poslední místnost hráče
+    const LS_ROOM = 'gh_last_room';
 
     // ─── Toast ───────────────────────────────────────────────────
     function toast(msg, type = 'info') {
@@ -358,8 +361,6 @@
             document.getElementById('loginBtn').classList.add('hidden');
             document.getElementById('settingsBtn').classList.remove('hidden');
             if (user.email === "zitkatomik007@gmail.com") document.getElementById('btnAdminMode').classList.remove('hidden');
-
-            // Po přihlášení zkontroluj jestli hráč byl ve hře (rejoin check)
             await checkForRejoin();
         } else {
             document.getElementById('userChip').classList.remove('show');
@@ -518,6 +519,7 @@
     function forceCloseLocal() {
         stopHeartbeat();
         isGameRunning = false;
+        amIHostGlobal = false;
         if (roomStatusUnsub) { roomStatusUnsub(); roomStatusUnsub = null; }
         document.getElementById('gameOverlay').style.display = 'none';
         document.getElementById('gameFrame').srcdoc = '';
@@ -578,10 +580,7 @@
         } catch(e) { toast('Chyba při vyhazování: ' + e.message, 'error'); }
     };
 
-    // ─── Abandon hráče – majetek propadá ──────────────────────────
-    // Zavolá se pokud hráč je ghost příliš dlouho během hry
-    // Nastaví ho jako abandoned=true a zapíše abandondAt timestamp.
-    // Samotná hra si přečte window.ABANDONED_UID a zpracuje ho.
+    // ─── Abandon hráče ────────────────────────────────────────────
     async function abandonPlayer(roomId, uid) {
         try {
             const ref = doc(db, "rooms", roomId);
@@ -592,7 +591,6 @@
             const players = (data.players || []).map(p =>
                 p.uid === uid ? { ...p, abandoned: true, ghost: true, abandonedAt: Date.now() } : p
             );
-            // Zapiš seznam opuštěných hráčů do samostatného pole pro iframe
             const abandonedUids = [...(data.abandonedUids || [])];
             if (!abandonedUids.includes(uid)) abandonedUids.push(uid);
             await updateDoc(ref, { players, abandonedUids });
@@ -600,7 +598,6 @@
     }
 
     // ─── REJOIN logika ────────────────────────────────────────────
-    // Po načtení stránky zkontrolujeme, jestli hráč byl ve hře
     async function checkForRejoin() {
         if (!auth.currentUser) return;
         const saved = localStorage.getItem(LS_ROOM);
@@ -610,14 +607,10 @@
             const s = await getDoc(ref);
             if (!s.exists()) { localStorage.removeItem(LS_ROOM); return; }
             const data = s.data();
-            // Místnost stále existuje, hráč v ní je (jako ghost nebo aktivní)
             const meInRoom = (data.players || []).find(p => p.uid === auth.currentUser.uid);
             if (!meInRoom) { localStorage.removeItem(LS_ROOM); return; }
-            // Hráč je opuštěný – nelze se vrátit
             if (meInRoom.abandoned) { localStorage.removeItem(LS_ROOM); return; }
-            // Místnost je uzavřená
             if (data.status === "closed") { localStorage.removeItem(LS_ROOM); return; }
-            // Vše OK – zobraz banner
             rejoinRoomId = saved;
             document.getElementById('rejoinGameTitle').textContent = data.gameTitle || 'neznámé hře';
             showRejoinBanner();
@@ -635,7 +628,6 @@
 
     window.dismissRejoin = async () => {
         hideRejoinBanner();
-        // Označíme hráče jako ghost (opuštěný) v místnosti
         if (rejoinRoomId && auth.currentUser) {
             try {
                 const ref = doc(db, "rooms", rejoinRoomId);
@@ -646,7 +638,6 @@
                         p.uid === auth.currentUser.uid ? { ...p, ghost: true, lastSeen: 0 } : p
                     );
                     await updateDoc(ref, { players });
-                    // Pokud hra běží a stále dost hráčů, mark as abandoned
                     if (data.status === "playing") {
                         await abandonPlayer(rejoinRoomId, auth.currentUser.uid);
                     }
@@ -657,7 +648,6 @@
         rejoinRoomId = null;
     };
 
-    // Rejoin do rozehrané nebo čekající hry
     async function rejoinRoom(code) {
         if (!auth.currentUser) { openM('authModal'); return; }
         const ref = doc(db, "rooms", code);
@@ -666,7 +656,6 @@
         const rd = s.data();
         if (rd.status === "closed") { toast('Hra skončila.', 'info'); localStorage.removeItem(LS_ROOM); return; }
 
-        // Načti herní data
         if (rd.gameId) {
             const g = allGames.find(x => x.id === rd.gameId);
             if (g) { window.selectedGameId = g.id; window.selectedGameHtml = g.html; window.selectedGameMax = g.maxPlayers || 2; window.selectedGameTitle = g.title; }
@@ -680,7 +669,9 @@
         if (!window.selectedGameHtml) { toast('Nepodařilo se načíst hru.', 'error'); return; }
 
         currentRoomId = code;
-        const me = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Hráč", isHost: rd.hostId === auth.currentUser.uid, lastSeen: Date.now(), ghost: false };
+        const amIHost = rd.hostId === auth.currentUser.uid;
+        amIHostGlobal = amIHost;
+        const me = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Hráč", isHost: amIHost, lastSeen: Date.now(), ghost: false };
         let players = (rd.players || []);
         const existingIdx = players.findIndex(p => p.uid === auth.currentUser.uid);
         if (existingIdx >= 0) players[existingIdx] = { ...players[existingIdx], ...me, ghost: false, abandoned: false };
@@ -691,26 +682,21 @@
         await startHeartbeat(code);
 
         if (rd.status === "playing") {
-            // Rovnou do hry bez odpočtu
             toast('Vrátil ses do hry! 🎮', 'success');
-            const amIHost = rd.hostId === auth.currentUser.uid;
             const activePlayers = players.filter(p => !p.ghost && !p.abandoned);
             isGameRunning = true;
             const injection = `<script>window.ROOM_ID="${code}";window.IS_HOST=${amIHost};window.MY_UID="${auth.currentUser.uid}";window.PLAYERS=${JSON.stringify(activePlayers)};window.IS_REJOIN=true;window.ABANDONED_UIDS=${JSON.stringify(rd.abandonedUids || [])};<\/script>`;
             const frame = document.getElementById('gameFrame');
             frame.srcdoc = injection + window.selectedGameHtml;
             document.getElementById('gameOverlay').style.display = 'block';
-            // Nastartuj poslouchání místnosti (pro abandon detection)
             listenRoomDuringGame(code, amIHost);
         } else {
-            // Ještě v lobby / waiting
             if (!document.getElementById('lobbyModal').classList.contains('open')) {
                 document.getElementById('lobbyTitle').innerText = window.selectedGameTitle || 'Hra';
                 document.getElementById('lobbyInitialView').classList.remove('hidden');
                 document.getElementById('lobbyWaitingView').classList.add('hidden');
                 openM('lobbyModal');
             }
-            const amIHost = rd.hostId === auth.currentUser.uid;
             enterWaitingRoom(code, amIHost);
         }
     }
@@ -720,6 +706,7 @@
         if (!auth.currentUser) { openM('authModal'); return; }
         const code = Math.random().toString(36).substring(2, 7).toUpperCase();
         currentRoomId = code;
+        amIHostGlobal = true;
         const me = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Hráč", isHost: true, lastSeen: Date.now(), ghost: false };
         await setDoc(doc(db, "rooms", code), {
             status: "waiting", visibility: selectedVisibility, gameId: window.selectedGameId || "",
@@ -753,14 +740,12 @@
         if (!s.exists()) return toast('Místnost neexistuje.', 'error');
         const rd = s.data();
         if (rd.status === "closed") return toast('Hra již skončila.', 'error');
-        // Hráč je již v místnosti? Rejoin!
         const meInRoom = (rd.players || []).find(p => p.uid === auth.currentUser.uid);
         if (meInRoom && !meInRoom.abandoned) { return await rejoinRoom(code); }
         if (rd.status !== "waiting") return toast('Hra již probíhá.', 'error');
         const activePlayers = (rd.players || []).filter(p => !p.ghost && !p.abandoned);
         if (activePlayers.length >= (rd.maxPlayers || 2)) return toast(`Místnost je plná! (max ${rd.maxPlayers || 2})`, 'error');
 
-        // Načti herní data
         if (rd.gameId) {
             const g = allGames.find(x => x.id === rd.gameId);
             if (g) { window.selectedGameId = g.id; window.selectedGameHtml = g.html; window.selectedGameMax = g.maxPlayers || 2; window.selectedGameTitle = g.title; }
@@ -773,6 +758,7 @@
         }
         if (!window.selectedGameHtml) return toast('Nepodařilo se načíst hru pro tuto místnost.', 'error');
         currentRoomId = code;
+        amIHostGlobal = false;
         const me = { uid: auth.currentUser.uid, name: auth.currentUser.displayName || "Hráč", isHost: false, lastSeen: Date.now(), ghost: false };
         let players = (rd.players || []);
         const existingIdx = players.findIndex(p => p.uid === auth.currentUser.uid);
@@ -828,7 +814,7 @@
         });
     }
 
-    // ─── Leave room ───────────────────────────────────────────────
+    // ─── Leave room (čekárna) ─────────────────────────────────────
     async function leaveRoom() {
         stopHeartbeat();
         if (currentRoomId && auth.currentUser) {
@@ -846,17 +832,80 @@
         forceCloseLocal();
     }
 
-    // ─── Poslouchat místnost BĚHEM HRY (pro abandon detection) ────
+    // ─────────────────────────────────────────────────────────────
+    // OPRAVA HLAVNÍHO BUGU:
+    //
+    // leaveGame() – volá hráč který chce opustit rozehranou hru.
+    //   • Označí sám sebe jako ghost/abandoned v Firestore.
+    //   • NESTAVÍ status:"closed" → ostatní hráči mohou pokračovat.
+    //   • Lokálně zavře overlay pouze pro tohoto hráče.
+    //
+    // closeGame() – POUZE pro hostitele, pokud chce ukončit hru pro VŠECHNY.
+    //   • Nastavuje status:"closed" → všichni dostanou oznámení.
+    //
+    // Tlačítko "✕ Opustit hru" nyní volá leaveGame().
+    // ─────────────────────────────────────────────────────────────
+
+    window.leaveGame = async () => {
+        if (!currentRoomId || !auth.currentUser) { forceCloseLocal(); return; }
+
+        if (amIHostGlobal) {
+            // Host dostane na výběr: opustit jen sám, nebo ukončit pro všechny
+            const choice = confirm(
+                "Jsi hostitel.\n\n" +
+                "OK = Ukončit hru pro VŠECHNY hráče\n" +
+                "Zrušit = Jen opustit hru (ostatní mohou pokračovat)"
+            );
+            if (choice) {
+                // Ukončit pro všechny
+                try { await updateDoc(doc(db, "rooms", currentRoomId), { status: "closed" }); } catch (_) {}
+                forceCloseLocal();
+                return;
+            }
+        }
+
+        // Normální odchod – jen označit sebe jako abandoned
+        try {
+            await abandonPlayer(currentRoomId, auth.currentUser.uid);
+        } catch (_) {}
+
+        forceCloseLocal();
+    };
+
+    // Zachováme closeGame pro zpětnou kompatibilitu (např. pokud ho volá iframe)
+    window.closeGame = window.leaveGame;
+
+    // ─── Poslouchat místnost BĚHEM HRY ────────────────────────────
     function listenRoomDuringGame(roomId, amIHost) {
         if (roomStatusUnsub) roomStatusUnsub();
         let abandonTimers = {};
         roomStatusUnsub = onSnapshot(doc(db, "rooms", roomId), async (s) => {
             const d = s.data(); if (!d) return;
-            if (d.status === "closed") { toast('Hra byla ukončena.', 'info'); forceCloseLocal(); return; }
-            const amIStillHere = (d.players || []).some(p => p.uid === auth.currentUser.uid && !p.abandoned);
-            if (!amIStillHere) { toast('Byl jsi odpojen ze hry.', 'error'); forceCloseLocal(); return; }
-            // Ghost detection → abandon timer
-            const now = Date.now();
+
+            // Místnost explicitně uzavřena (hostitelem nebo jinak)
+            if (d.status === "closed") {
+                toast('Hra byla ukončena hostitelem.', 'info');
+                forceCloseLocal();
+                return;
+            }
+
+            // Zkontroluj zda MÁ SEBE stále v místnosti a není abandoned
+            const me = (d.players || []).find(p => p.uid === auth.currentUser.uid);
+            if (!me) {
+                // Byl odstraněn (kick) – zavři jen sobě
+                toast('Byl jsi odpojen ze hry.', 'error');
+                forceCloseLocal();
+                return;
+            }
+            if (me.abandoned) {
+                // Byl označen jako abandoned (timeout) – zavři jen sobě
+                toast('Byl jsi odpojen ze hry kvůli nečinnosti.', 'info');
+                forceCloseLocal();
+                return;
+            }
+
+            // OPRAVA: Neuzavíráme hru kvůli tomu že jiný hráč odešel!
+            // Jen spravujeme abandon timery pro ostatní ghost hráče.
             (d.players || []).forEach(p => {
                 if (p.ghost && !p.abandoned && p.uid !== auth.currentUser.uid) {
                     if (!abandonTimers[p.uid]) {
@@ -869,7 +918,8 @@
                     if (abandonTimers[p.uid]) { clearTimeout(abandonTimers[p.uid]); delete abandonTimers[p.uid]; }
                 }
             });
-            // Aktualizuj abandonment v iframe přes postMessage
+
+            // Předej abandoned UIDs do iframe
             if (d.abandonedUids && d.abandonedUids.length > 0) {
                 try {
                     document.getElementById('gameFrame').contentWindow.postMessage({
@@ -906,6 +956,7 @@
     // ─── Spuštění hry ─────────────────────────────────────────────
     function launch(isHost, playersArray) {
         isGameRunning = true;
+        amIHostGlobal = isHost;
         closeM('lobbyModal');
         localStorage.setItem(LS_ROOM, currentRoomId);
         const injection = `<script>
@@ -915,7 +966,6 @@
             window.PLAYERS=${JSON.stringify(playersArray)};
             window.IS_REJOIN=false;
             window.ABANDONED_UIDS=[];
-            // Přijímá zprávy o abandoned hráčích z hosta
             window.addEventListener('message', function(e){
                 if(e.data && e.data.type==='GH_ABANDONED'){
                     window.ABANDONED_UIDS = e.data.abandonedUids;
@@ -926,20 +976,16 @@
         const frame = document.getElementById('gameFrame');
         frame.srcdoc = injection + window.selectedGameHtml;
         document.getElementById('gameOverlay').style.display = 'block';
-        // Spusť poslouchání pro abandon detection
+        await_heartbeat_after_launch();
         listenRoomDuringGame(currentRoomId, isHost);
     }
 
-    // ─── Zavřít hru ───────────────────────────────────────────────
-    window.closeGame = async () => {
-        if (currentRoomId) {
-            try { await updateDoc(doc(db, "rooms", currentRoomId), { status: "closed" }); } catch (_) {}
-        }
-        forceCloseLocal();
-    };
+    // Po spuštění hry restartujeme heartbeat (byl zastaven před odpočtem)
+    async function await_heartbeat_after_launch() {
+        await startHeartbeat(currentRoomId);
+    }
 
     // ─── Unload handler ───────────────────────────────────────────
-    // Nastaví hráče jako ghost, ale neodstranuje ho – pro možnost rejoin
     window.addEventListener('beforeunload', () => {
         stopHeartbeat();
         if (currentRoomId && auth.currentUser) {
@@ -949,9 +995,8 @@
                 const players = (s.data().players || []).map(p =>
                     p.uid === auth.currentUser.uid ? { ...p, ghost: true, lastSeen: Date.now() } : p
                 );
-                // NE lastSeen: 0 – ponecháme čas, aby timer věděl kdy začít odpočítávat abandon
+                // NENASTAVUJEME status:"closed" – jen ghost pro případný rejoin
                 updateDoc(ref, { players }).catch(() => {});
-                // localStorage ponecháme – pro rejoin
             }).catch(() => {});
         }
     });
